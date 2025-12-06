@@ -1,0 +1,21 @@
+---
+type Props = {
+  title?: string;
+  description?: string;
+};
+
+import '@/styles/global.css';
+---
+
+<html lang="be">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{Astro.props.title ?? ''}</title>
+    <meta name="description" content={Astro.props.description ?? ''} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
