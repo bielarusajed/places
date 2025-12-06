@@ -1,0 +1,50 @@
+---
+import { eq } from 'drizzle-orm';
+
+import { HeaderWrapper } from '@/components/header/wrapper';
+import PlaceDetails from '@/components/place-details';
+import db, { forms, places } from '@/db';
+import Layout from '@/layouts/base.astro';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const placeId = Number(id);
+
+if (isNaN(placeId)) {
+  return Astro.redirect('/');
+}
+
+const placeResult = await db.select().from(places).where(eq(places.id, placeId)).limit(1);
+
+if (placeResult.length === 0) {
+  return Astro.redirect('/');
+}
+
+const placeForms = await db
+  .select({
+    id: forms.id,
+    type: forms.type,
+    form: forms.form,
+    gender: forms.gender,
+    stressIndexes: forms.stressIndexes,
+  })
+  .from(forms)
+  .where(eq(forms.placeId, placeId));
+
+const place = {
+  ...placeResult[0],
+  forms: placeForms,
+};
+
+const mainForm = placeForms.find((f) => f.type === 'main');
+---
+
+<Layout title={mainForm?.form ?? place.name}>
+  <div class="min-h-screen">
+    <HeaderWrapper variant="top" client:load />
+    <main transition:animate="slide">
+      <PlaceDetails place={place} />
+    </main>
+  </div>
+</Layout>

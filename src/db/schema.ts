@@ -20,7 +20,14 @@ export const localityTypeEnum = pgEnum('locality_type', [
   'farmstead', // хутар (х.)
 ]);
 
-export const formsTypesEnum = pgEnum('forms_types', ['main', 'alias', 'transliteration', 'russian', 'paradigm']);
+export const formsTypesEnum = pgEnum('forms_types', [
+  'main',
+  'alias',
+  'alias-ru',
+  'transliteration',
+  'russian',
+  'paradigm',
+]);
 
 export const places = pgTable(
   'places',
@@ -55,6 +62,8 @@ export const forms = pgTable(
     paradigmTag: varchar({ length: 3 }),
     gender: genderEnum(),
     stressIndexes: integer().array().default([]),
+
+    // language: varchar({ length: 2 }).notNull(),
 
     form: text().notNull(),
   },

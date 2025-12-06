@@ -1,7 +1,10 @@
 ---
+import { HeaderWrapper } from '@/components/header/wrapper';
 import Layout from '@/layouts/base.astro';
 ---
 
-<Layout title="Places">
-  <h1 class="text-3xl font-bold underline">Places</h1>
+<Layout title="Месцы — пошук беларускіх населеных пунктаў">
+  <main class="min-h-screen">
+    <HeaderWrapper variant="centered" client:load />
+  </main>
 </Layout>

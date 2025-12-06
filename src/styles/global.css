@@ -118,3 +118,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .cap-alphabetic {
+    text-box: cap alphabetic;
+  }
+}

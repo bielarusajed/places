@@ -1,0 +1,1 @@
+ALTER TYPE "forms_types" ADD VALUE 'alias-ru' BEFORE 'transliteration';

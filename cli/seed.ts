@@ -87,7 +87,6 @@ type GrammarDB = {
 };
 
 function parseDmsCoordinates(input: string) {
-  // Падтрымлівае і ' і ′, і " і ″, і магчымыя прабелы пасля сімвалаў
   const regex =
     /(?<lat>\d+)°\s*(?<latm>\d+)['′]\s*(?<lats>\d+(?:\.\d+)?)["″]\s+(?<lon>\d+)°\s*(?<lonm>\d+)['′]\s*(?<lons>\d+(?:\.\d+)?)["″]/;
 
@@ -95,10 +94,6 @@ function parseDmsCoordinates(input: string) {
 
   if (!match) return null;
 
-  // if (!match) throw new Error('Invalid coordinate format');
-
-  // Парсім радок у лікі (parseFloat/parseInt)
-  // Групы пачынаюцца з індэкса 1 (0 - гэта ўвесь радок)
   const latParts = {
     d: parseInt(match.groups?.lat ?? '', 10),
     m: parseInt(match.groups?.latm ?? '', 10),
@@ -111,7 +106,6 @@ function parseDmsCoordinates(input: string) {
     s: parseFloat(match.groups?.lons ?? ''),
   };
 
-  // Канвертуем у Decimal Degrees
   const latDecimal = latParts.d + latParts.m / 60 + latParts.s / 3600;
   const lonDecimal = lonParts.d + lonParts.m / 60 + lonParts.s / 3600;
 
@@ -124,14 +118,13 @@ function parseDmsCoordinates(input: string) {
 export const seed = async (options: Options) => {
   const { inputTSV, inputXML } = options;
 
+  process.stdout.write(`Parsing GrammarDB from ${inputXML}...\n`);
   const xmlContent = await fs.readFile(inputXML);
   const parser = new XMLParser({ ignoreAttributes: false });
   const grammarDB = parser.parse(xmlContent) as GrammarDB;
-  // console.log(grammarDB.Wordlist.Paradigm.find((p) => p['@_pdgId'] === '1037675')!.Variant);
-  // process.exit(0);
 
   try {
-    process.stdout.write(`Seeding places from ${inputTSV}...\n`);
+    process.stdout.write(`Parsing TSV from ${inputTSV}...\n`);
     const tsvStream = fsSync.createReadStream(inputTSV, 'utf-8');
     const tsvParsedStream = tsvStream.pipe(parse({ delimiter: '\t', quote: null, headers: true }));
     tsvParsedStream.on('error', (error) => process.stderr.write(`Error parsing TSV: ${error.stack}\n`));
@@ -158,8 +151,8 @@ export const seed = async (options: Options) => {
         .insert(places)
         .values({
           region: row['Вобласць'],
-          district: row['Раён'] !== '<Вобласць>' ? row['Раён'] : null,
-          council: !['<Вобласць>', '<Раён>'].includes(row['Сельсавет']) ? row['Сельсавет'] : null,
+          district: row['Раён'] !== '<вобласць>' ? row['Раён'] : null,
+          council: !['<вобласць>', '<раён>'].includes(row['Сельсавет']) ? row['Сельсавет'] : null,
           type: typeMap[row['Тып']],
           name: row['Назва'],
           coordinates: parseDmsCoordinates(row['OpenStreetMap каардынаты']),
@@ -190,43 +183,44 @@ export const seed = async (options: Options) => {
         )
         .flat();
 
-      await db.insert(forms).values([
-        {
-          placeId: place.id,
-          type: 'main',
-          gender: genderMap[row['Род']],
-          form: row['Назва без націскаў'],
-          stressIndexes: Array.from(stressIndexes),
-        },
-        {
-          placeId: place.id,
-          type: 'transliteration',
-          gender: genderMap[row['Род']],
-          form: row['Транслітарацыя'],
-        },
-        {
-          placeId: place.id,
-          type: 'russian',
-          gender: genderMap[row['Род']],
-          form: row['Назва па-расейску'],
-        },
-        ...row['Варыянты назвы'].split(';').map((variant) => ({
-          placeId: place.id,
-          type: 'alias' as const,
-          gender: genderMap[variant.split(',')[1]?.trim() as keyof typeof genderMap] || genderMap[row['Род']],
-          form: variant.split(',')[0].trim(),
-        })),
-        {
-          placeId: place.id,
-          type: 'russian',
-          gender: genderMap[row['Род']],
-          form: row['Назвы што ўжываюцца да цяперашняга часу(рас)'],
-        },
-        ...formsFromVariants,
-      ]);
+      await db.insert(forms).values(
+        [
+          {
+            placeId: place.id,
+            type: 'main' as const,
+            gender: genderMap[row['Род']],
+            form: row['Назва без націскаў'].trim(),
+            stressIndexes: Array.from(stressIndexes),
+          },
+          {
+            placeId: place.id,
+            type: 'transliteration' as const,
+            gender: genderMap[row['Род']],
+            form: row['Транслітарацыя'].trim(),
+          },
+          {
+            placeId: place.id,
+            type: 'russian' as const,
+            gender: genderMap[row['Род']],
+            form: row['Назва па-расейску'].trim(),
+          },
+          ...row['Варыянты назвы'].split(';').map((variant) => ({
+            placeId: place.id,
+            type: 'alias' as const,
+            gender: genderMap[variant.split(',')[1]?.trim() as keyof typeof genderMap] || genderMap[row['Род']],
+            form: variant.split(',')[0].trim().trim(),
+          })),
+          {
+            placeId: place.id,
+            type: 'alias-ru' as const,
+            gender: genderMap[row['Род']],
+            form: row['Назвы што ўжываюцца да цяперашняга часу(рас)'].trim(),
+          },
+          ...formsFromVariants,
+        ].filter((v) => !!v.form),
+      );
     });
-    await new Promise((resolve) => tsvParsedStream.on('end', resolve));
-    tsvParsedStream.on('end', (rowCount: number) => process.stdout.write(`Parsed ${rowCount} places.\n`));
+    tsvParsedStream.on('end', (rowCount: number) => process.stdout.write(`Parsed ${rowCount} places from TSV.\n`));
   } catch (error) {
     if (error instanceof Error) process.stderr.write(`Error seeding places: ${error.stack}\n`);
     else process.stderr.write(`Error seeding places: unknown error\n`);
