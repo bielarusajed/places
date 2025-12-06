@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { eq, ilike, sql } from 'drizzle-orm';
+import { and, eq, ilike, sql } from 'drizzle-orm';
 
 import db, { forms, places } from '@/db';
 
@@ -7,10 +7,15 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ url }) => {
   const query = url.searchParams.get('q')?.trim();
+  const region = url.searchParams.get('region')?.trim();
 
   if (!query || query.length < 2) {
     return Response.json([]);
   }
+
+  const conditions = [ilike(forms.form, `%${query}%`)];
+
+  if (region) conditions.push(eq(places.region, region));
 
   const results = await db
     .selectDistinctOn([places.id], {
@@ -33,9 +38,9 @@ export const GET: APIRoute = async ({ url }) => {
     })
     .from(forms)
     .innerJoin(places, eq(forms.placeId, places.id))
-    .where(ilike(forms.form, `%${query}%`))
+    .where(and(...conditions))
     .orderBy(places.id)
-    .limit(20);
+    .limit(40);
 
   return Response.json(results);
 };

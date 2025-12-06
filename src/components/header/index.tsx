@@ -4,11 +4,13 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { localityTypeLabels, type SearchResult } from '@/lib/types';
 
 type Props = {
   variant?: 'centered' | 'top';
+  regions?: string[];
 };
 
 const formatLocation = (result: SearchResult) =>
@@ -20,16 +22,21 @@ const formatLocation = (result: SearchResult) =>
     .filter(Boolean)
     .join(', ');
 
-function Header({ variant = 'top' }: Props) {
+function Header({ variant = 'top', regions = [] }: Props) {
   const [query, setQuery] = useState('');
+  const [region, setRegion] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 300);
 
+  const selectedRegion = region && region !== 'all' ? region : '';
+
   const { data: results = [], isFetching } = useQuery({
-    queryKey: ['search', debouncedQuery],
+    queryKey: ['search', debouncedQuery, selectedRegion],
     queryFn: async () => {
       if (debouncedQuery.length < 2) return [];
-      const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
+      const params = new URLSearchParams({ q: debouncedQuery });
+      if (selectedRegion) params.set('region', selectedRegion);
+      const res = await fetch(`/api/search?${params.toString()}`);
       return res.json() as Promise<SearchResult[]>;
     },
     enabled: debouncedQuery.length >= 2,
@@ -52,25 +59,42 @@ function Header({ variant = 'top' }: Props) {
         </a>
 
         <div className="relative flex-1" style={{ viewTransitionName: 'search-box' }}>
-          <InputGroup>
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-            <InputGroupInput
-              type="search"
-              placeholder="Пачніце набіраць назву для пошуку"
-              autoComplete="off"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setIsOpen(true)}
-              onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-            />
-            {isFetching && (
-              <InputGroupAddon align="inline-end">
-                <Loader2 className="animate-spin" />
+          <div className={`flex gap-2 ${variant === 'centered' ? 'flex-col-reverse sm:flex-row' : ''}`}>
+            <InputGroup className="flex-1">
+              <InputGroupAddon>
+                <Search />
               </InputGroupAddon>
+              <InputGroupInput
+                type="search"
+                placeholder="Пачніце набіраць назву для пошуку"
+                autoComplete="off"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setIsOpen(true)}
+                onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+              />
+              {isFetching && (
+                <InputGroupAddon align="inline-end">
+                  <Loader2 className="animate-spin" />
+                </InputGroupAddon>
+              )}
+            </InputGroup>
+            {regions.length > 0 && (
+              <Select value={region} onValueChange={setRegion}>
+                <SelectTrigger className={variant === 'centered' ? 'w-full sm:w-auto' : 'w-auto shrink-0'}>
+                  <SelectValue placeholder="Вобласць" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Усе вобласці</SelectItem>
+                  {regions.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-          </InputGroup>
+          </div>
 
           {showSuggestions && (
             <div className="bg-popover absolute top-full right-0 left-0 z-50 mt-1 max-h-[60vh] overflow-y-auto rounded-lg border shadow-lg">

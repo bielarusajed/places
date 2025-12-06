@@ -4,12 +4,13 @@ import Header from './index';
 
 type Props = {
   variant?: 'centered' | 'top';
+  regions?: string[];
 };
 
-export function HeaderWrapper({ variant }: Props) {
+export function HeaderWrapper({ variant, regions = [] }: Props) {
   return (
     <QueryProvider>
-      <Header variant={variant} />
+      <Header variant={variant} regions={regions} />
     </QueryProvider>
   );
 }

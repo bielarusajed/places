@@ -1,10 +1,16 @@
 ---
 import { HeaderWrapper } from '@/components/header/wrapper';
+import db, { places } from '@/db';
 import Layout from '@/layouts/base.astro';
+
+export const prerender = false;
+
+const regionsResult = await db.selectDistinct({ region: places.region }).from(places).orderBy(places.region);
+const regions = regionsResult.map((r) => r.region);
 ---
 
 <Layout title="Месцы — пошук беларускіх населеных пунктаў">
   <main class="min-h-screen">
-    <HeaderWrapper variant="centered" client:load />
+    <HeaderWrapper variant="centered" regions={regions} client:load />
   </main>
 </Layout>

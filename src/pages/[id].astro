@@ -15,11 +15,16 @@ if (isNaN(placeId)) {
   return Astro.redirect('/');
 }
 
-const placeResult = await db.select().from(places).where(eq(places.id, placeId)).limit(1);
+const [placeResult, regionsResult] = await Promise.all([
+  db.select().from(places).where(eq(places.id, placeId)).limit(1),
+  db.selectDistinct({ region: places.region }).from(places).orderBy(places.region),
+]);
 
 if (placeResult.length === 0) {
   return Astro.redirect('/');
 }
+
+const regions = regionsResult.map((r) => r.region);
 
 const placeForms = await db
   .select({
@@ -42,7 +47,7 @@ const mainForm = placeForms.find((f) => f.type === 'main');
 
 <Layout title={mainForm?.form ?? place.name}>
   <div class="min-h-screen">
-    <HeaderWrapper variant="top" client:load />
+    <HeaderWrapper variant="top" regions={regions} client:load />
     <main transition:animate="slide">
       <PlaceDetails place={place} />
     </main>
