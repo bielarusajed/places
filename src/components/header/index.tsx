@@ -116,7 +116,7 @@ function Header({ variant = 'top', regions = [] }: Props) {
         </InputGroupAddon>
         <InputGroupInput
           type="search"
-          placeholder={isSearchVariant ? 'Пошук' : 'Пачніце набіраць назву для пошуку'}
+          placeholder={isSearchVariant ? 'Пошук' : 'Пачніце набіраць назву'}
           autoComplete="off"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
