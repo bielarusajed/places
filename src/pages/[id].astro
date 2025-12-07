@@ -43,9 +43,10 @@ const place = {
 };
 
 const mainForm = placeForms.find((f) => f.type === 'main');
+const name = mainForm?.form ?? place.name;
 ---
 
-<Layout title={mainForm?.form ?? place.name}>
+<Layout title={`${name} — PLACES`}>
   <div class="min-h-screen">
     <HeaderWrapper variant="top" regions={regions} client:load />
     <main transition:animate="slide">
