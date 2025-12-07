@@ -1,0 +1,23 @@
+---
+import db, { places } from '@/db';
+import Layout from '@/layouts/base.astro';
+import { SearchResultsWrapper } from '@/components/search-results/wrapper';
+import { HeaderWrapper } from '@/components/header/wrapper';
+
+export const prerender = false;
+
+const url = new URL(Astro.request.url);
+const initialQuery = url.searchParams.get('q') || '';
+
+const regionsResult = await db.selectDistinct({ region: places.region }).from(places).orderBy(places.region);
+const regions = regionsResult.map((r) => r.region);
+---
+
+<Layout title={initialQuery ? `Пошук: ${initialQuery}` : 'Пошук'}>
+  <div class="min-h-screen">
+    <HeaderWrapper variant="search" regions={regions} client:load />
+    <main class="container mx-auto px-4 py-6" transition:animate="slide">
+      <SearchResultsWrapper client:load />
+    </main>
+  </div>
+</Layout>
