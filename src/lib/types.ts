@@ -31,6 +31,8 @@ export type PlaceForm = {
   form: string;
   gender: 'm' | 'f' | 'n' | 'p' | null;
   stressIndexes: number[] | null;
+  paradigmVariant: string | null;
+  paradigmTag: string | null;
 };
 
 export type PlaceDetails = {

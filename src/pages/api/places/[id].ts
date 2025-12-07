@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { and, eq, ne } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 import db, { forms, places } from '@/db';
 
@@ -25,9 +25,11 @@ export const GET: APIRoute = async ({ params }) => {
       form: forms.form,
       gender: forms.gender,
       stressIndexes: forms.stressIndexes,
+      paradigmVariant: forms.paradigmVariant,
+      paradigmTag: forms.paradigmTag,
     })
     .from(forms)
-    .where(and(eq(forms.placeId, id), ne(forms.type, 'paradigm')));
+    .where(eq(forms.placeId, id));
 
   return Response.json({
     ...place[0],

@@ -2,9 +2,12 @@
 import { eq } from 'drizzle-orm';
 
 import { HeaderWrapper } from '@/components/header/wrapper';
-import PlaceDetails from '@/components/place-details';
+import ParadigmCarousel from '@/components/paradigm-carousel';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import db, { forms, places } from '@/db';
 import Layout from '@/layouts/base.astro';
+import { localityTypeLabels, type PlaceForm } from '@/lib/types';
 
 export const prerender = false;
 
@@ -26,16 +29,18 @@ if (placeResult.length === 0) {
 
 const regions = regionsResult.map((r) => r.region);
 
-const placeForms = await db
+const placeForms = (await db
   .select({
     id: forms.id,
     type: forms.type,
     form: forms.form,
     gender: forms.gender,
     stressIndexes: forms.stressIndexes,
+    paradigmVariant: forms.paradigmVariant,
+    paradigmTag: forms.paradigmTag,
   })
   .from(forms)
-  .where(eq(forms.placeId, placeId));
+  .where(eq(forms.placeId, placeId))) as PlaceForm[];
 
 const place = {
   ...placeResult[0],
@@ -43,14 +48,136 @@ const place = {
 };
 
 const mainForm = placeForms.find((f) => f.type === 'main');
-const name = mainForm?.form ?? place.name;
+const aliasNames = placeForms.filter((f) => f.type === 'alias' || f.type === 'alias-ru');
+const transliteration = placeForms.find((f) => f.type === 'transliteration');
+const russian = placeForms.find((f) => f.type === 'russian');
+const paradigmForms = placeForms.filter((f) => f.type === 'paradigm');
+
+const title = mainForm?.form ?? place.name;
+
+const hasTranslations = transliteration || russian;
+const hasAliases = aliasNames.length > 0;
+const hasGrammar = mainForm?.gender;
+const hasParadigms = paradigmForms.length > 0;
+
+const genderLabels = {
+  m: 'мужчынскі род',
+  f: 'жаночы род',
+  n: 'ніякі род',
+  p: 'множны лік',
+} as const;
+
+const genderShort = {
+  m: 'м.',
+  f: 'ж.',
+  n: 'н.',
+  p: 'мн.',
+} as const;
+
+const locationParts = [
+  `${place.region} вобласць`,
+  place.district ? `${place.district} раён` : null,
+  place.council ? `${place.council} сельсавет` : null,
+].filter(Boolean);
 ---
 
-<Layout title={`${name} — PLACES`}>
+<Layout title={`${title} — PLACES`}>
   <div>
     <HeaderWrapper variant="top" regions={regions} client:load />
     <main transition:animate="slide">
-      <PlaceDetails place={place} />
+      <div class="px-4 py-10">
+        <article class="mx-auto max-w-lg">
+          <!-- Header -->
+          <header class="mb-10 text-center">
+            <Badge variant="secondary" className="mb-4 text-xs tracking-wider uppercase">
+              {localityTypeLabels[place.type]}
+            </Badge>
+            <h1 class="mb-3 text-5xl font-bold tracking-tight">{place.name}</h1>
+            <p class="text-muted-foreground text-sm">{locationParts.join(' • ')}</p>
+          </header>
+
+          <Separator className="my-8" />
+
+          <!-- Content sections -->
+          <div class="space-y-8">
+            <!-- Translations -->
+            {
+              hasTranslations && (
+                <section>
+                  <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Назвы</h2>
+                  <div class="divide-border divide-y">
+                    {transliteration && (
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <span class="text-muted-foreground shrink-0">Лацінкай</span>
+                        <span class="text-right font-medium">{transliteration.form}</span>
+                      </div>
+                    )}
+                    {russian && (
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <span class="text-muted-foreground shrink-0">Па-руску</span>
+                        <span class="text-right font-medium">{russian.form}</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )
+            }
+
+            <!-- Alternative names -->
+            {
+              hasAliases && (
+                <section>
+                  <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">
+                    Іншыя назвы
+                  </h2>
+                  <div class="flex flex-wrap gap-2">
+                    {aliasNames.map((alias) => {
+                      const isRussian = alias.type === 'alias-ru';
+                      return (
+                        <span
+                          class={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                            isRussian
+                              ? 'border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                              : 'bg-card hover:bg-accent shadow-sm'
+                          }`}
+                        >
+                          <span>{alias.form}</span>
+                          {alias.gender && (
+                            <span class="text-muted-foreground text-xs">({genderShort[alias.gender]})</span>
+                          )}
+                          {isRussian && <span class="text-[10px] opacity-50">рус.</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </section>
+              )
+            }
+
+            <!-- Grammar -->
+            {
+              (hasGrammar || hasParadigms) && (
+                <section>
+                  <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Граматыка</h2>
+                  {hasGrammar && mainForm!.gender && (
+                    <div class="divide-border divide-y">
+                      <div class="flex items-center justify-between gap-4 py-3">
+                        <span class="text-muted-foreground shrink-0">Род</span>
+                        <span class="text-right font-medium">{genderLabels[mainForm!.gender]}</span>
+                      </div>
+                    </div>
+                  )}
+                  {hasParadigms && (
+                    <div class={`px-8 md:px-0 ${hasGrammar ? 'mt-6' : ''}`}>
+                      <ParadigmCarousel paradigmForms={paradigmForms} mainFormText={mainForm?.form ?? ''} client:load />
+                    </div>
+                  )}
+                </section>
+              )
+            }
+          </div>
+        </article>
+      </div>
     </main>
   </div>
 </Layout>
