@@ -15,6 +15,15 @@ const caseLabels = {
 
 const caseOrder = ['N', 'G', 'D', 'A', 'I', 'L', 'V'] as const;
 
+// Parse paradigm tag to extract case and number
+// 2-char tags (nouns): Case + Number (e.g. NS, GP)
+// 3-char tags (substantivized adjectives): Gender + Case + Number (e.g. NNS, NGS)
+function parseParadigmTag(tag: string): { case: string; number: string } | null {
+  if (tag.length === 2) return { case: tag[0], number: tag[1] };
+  if (tag.length === 3) return { case: tag[1], number: tag[2] };
+  return null;
+}
+
 function formatFormWithStress(form: string, stressIndexes: number[] | null) {
   if (!stressIndexes || stressIndexes.length === 0) {
     return form;
@@ -48,12 +57,17 @@ function ParadigmTable({
   variantIndex: number;
   totalVariants: number;
 }) {
+  // Group forms by case and number (handles both 2-char and 3-char tags)
   const formsMap = new Map<string, PlaceForm[]>();
   variant.forms.forEach((f) => {
     if (f.paradigmTag) {
-      const existing = formsMap.get(f.paradigmTag) || [];
-      existing.push(f);
-      formsMap.set(f.paradigmTag, existing);
+      const parsed = parseParadigmTag(f.paradigmTag);
+      if (parsed) {
+        const key = parsed.case + parsed.number; // normalize to 2-char key
+        const existing = formsMap.get(key) || [];
+        existing.push(f);
+        formsMap.set(key, existing);
+      }
     }
   });
 
@@ -125,8 +139,17 @@ function ParadigmCarousel({ paradigmForms, mainFormText }: Props) {
 
   // Sort variants: prioritize those where nominative matches main form
   const sortedVariants = [...paradigmVariants].sort((a, b) => {
-    const aNominative = a.forms.find((f) => f.paradigmTag === 'NS' || f.paradigmTag === 'NP');
-    const bNominative = b.forms.find((f) => f.paradigmTag === 'NS' || f.paradigmTag === 'NP');
+    // Find nominative form (case N) for any number
+    const aNominative = a.forms.find((f) => {
+      if (!f.paradigmTag) return false;
+      const parsed = parseParadigmTag(f.paradigmTag);
+      return parsed?.case === 'N';
+    });
+    const bNominative = b.forms.find((f) => {
+      if (!f.paradigmTag) return false;
+      const parsed = parseParadigmTag(f.paradigmTag);
+      return parsed?.case === 'N';
+    });
 
     const aMatches = aNominative?.form === mainFormText ? 1 : 0;
     const bMatches = bNominative?.form === mainFormText ? 1 : 0;
