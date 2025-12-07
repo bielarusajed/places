@@ -10,6 +10,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { localityTypeLabels, type SearchResult } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { $searchDistrict, $searchQuery, $searchRegion, $selectedRegion, initSearchFromUrl } from '@/stores/search';
 
 type Props = {
@@ -27,6 +28,9 @@ const formatLocation = (result: SearchResult) =>
     .join(', ');
 
 function Header({ variant = 'top', regions = [] }: Props) {
+  const isSearchVariant = variant === 'search';
+  const isCenteredVariant = variant === 'centered';
+
   // For search variant, use nanostores
   const storeQuery = useStore($searchQuery);
   const storeRegion = useStore($searchRegion);
@@ -40,13 +44,12 @@ function Header({ variant = 'top', regions = [] }: Props) {
 
   // Initialize stores on mount for search variant
   useEffect(() => {
-    if (variant === 'search') {
+    if (isSearchVariant) {
       initSearchFromUrl(new URL(window.location.href));
     }
-  }, [variant]);
+  }, [isSearchVariant]);
 
   // Determine which state to use based on variant
-  const isSearchVariant = variant === 'search';
   const query = isSearchVariant ? storeQuery : localQuery;
   const region = isSearchVariant ? storeRegion : localRegion;
   const selectedRegion = isSearchVariant
@@ -101,157 +104,137 @@ function Header({ variant = 'top', regions = [] }: Props) {
 
   const showSuggestions = !isSearchVariant && isOpen && query.length >= 2;
 
-  // Search variant layout
-  if (isSearchVariant) {
-    return (
-      <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 border-b px-4 py-3 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center gap-3">
-          <a
-            href="/"
-            className="text-foreground hover:text-foreground/80 shrink-0 font-sans text-lg font-bold tracking-widest uppercase"
-            style={{ viewTransitionName: 'site-title' }}
+  const searchInput = (
+    <div className="relative flex-1" style={{ viewTransitionName: 'search-box' }}>
+      <InputGroup>
+        <InputGroupAddon>
+          <Search />
+        </InputGroupAddon>
+        <InputGroupInput
+          type="search"
+          placeholder={isSearchVariant ? 'Пошук' : 'Пачніце набіраць назву для пошуку'}
+          autoComplete="off"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={!isSearchVariant ? () => setIsOpen(true) : undefined}
+          onBlur={!isSearchVariant ? () => setTimeout(() => setIsOpen(false), 200) : undefined}
+          onKeyDown={!isSearchVariant ? handleKeyDown : undefined}
+        />
+        {!isSearchVariant && isFetching && (
+          <InputGroupAddon align="inline-end">
+            <Loader2 className="animate-spin" />
+          </InputGroupAddon>
+        )}
+        {!isSearchVariant && (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="shrink-0"
+            onClick={handleSearch}
+            disabled={query.trim().length < 2}
+            aria-label="Пошук"
           >
-            Places
-          </a>
+            <ArrowRight className="size-4" />
+          </Button>
+        )}
+      </InputGroup>
 
-          <div className="flex flex-1 items-center gap-3" style={{ viewTransitionName: 'search-box' }}>
-            <InputGroup className="flex-1">
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupInput
-                type="search"
-                placeholder="Пошук"
-                autoComplete="off"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </InputGroup>
-
-            <Select value={region} onValueChange={setRegion}>
-              <SelectTrigger className="w-40 shrink-0">
-                <SelectValue placeholder="Вобласць" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Усе вобласці</SelectItem>
-                {regions.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={storeDistrict} onValueChange={(v) => $searchDistrict.set(v)} disabled={!storeSelectedRegion}>
-              <SelectTrigger className="w-44 shrink-0">
-                <SelectValue placeholder={storeSelectedRegion ? 'Раён' : 'Спачатку вобласць'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Усе раёны</SelectItem>
-                {districts.map((d) => (
-                  <SelectItem key={d} value={d}>
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Suggestions dropdown (non-search variants only) */}
+      {showSuggestions && (
+        <div className="bg-popover absolute top-full right-0 left-0 z-50 mt-1 max-h-[60vh] overflow-y-auto rounded-lg border shadow-lg">
+          {results.length === 0 && !isFetching && (
+            <div className="text-muted-foreground px-4 py-8 text-center text-sm">Нічога не знойдзена</div>
+          )}
+          {results.map((result) => (
+            <a
+              key={result.id}
+              href={`/${result.id}`}
+              className="hover:bg-accent block border-b px-4 py-3 last:border-b-0"
+            >
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  {localityTypeLabels[result.type]}
+                </Badge>
+                <span className="text-lg leading-none font-medium">{result.name}</span>
+              </div>
+              <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-sm">
+                {result.transliteration && <span>{result.transliteration}</span>}
+                {result.russian && <span className="text-muted-foreground/70">{result.russian}</span>}
+              </div>
+              <div className="text-muted-foreground/60 mt-1 text-xs">{formatLocation(result)}</div>
+            </a>
+          ))}
         </div>
-      </header>
-    );
-  }
+      )}
+    </div>
+  );
 
-  // Centered and top variants
+  const regionSelect = regions.length > 0 && (
+    <div style={{ viewTransitionName: 'region-select' }}>
+      <Select value={region} onValueChange={setRegion}>
+        <SelectTrigger className={cn('shrink-0', isCenteredVariant ? 'w-full sm:w-auto' : 'w-40')}>
+          <SelectValue placeholder="Вобласць" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Усе вобласці</SelectItem>
+          {regions.map((r) => (
+            <SelectItem key={r} value={r}>
+              {r}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const districtSelect = isSearchVariant && (
+    <Select value={storeDistrict} onValueChange={(v) => $searchDistrict.set(v)} disabled={!storeSelectedRegion}>
+      <SelectTrigger className="w-44 shrink-0">
+        <SelectValue placeholder={storeSelectedRegion ? 'Раён' : 'Спачатку вобласць'} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">Усе раёны</SelectItem>
+        {districts.map((d) => (
+          <SelectItem key={d} value={d}>
+            {d}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <header
-      className={`w-full ${variant === 'centered' ? 'flex min-h-[60vh] flex-col items-center justify-center px-4' : 'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 border-b px-4 py-3 backdrop-blur'}`}
+      className={cn(
+        'w-full px-4',
+        isCenteredVariant
+          ? 'flex min-h-[60vh] flex-col items-center justify-center'
+          : 'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 border-b py-3 backdrop-blur',
+      )}
     >
-      <div className={`w-full ${variant === 'centered' ? 'max-w-md' : 'mx-auto flex max-w-2xl items-center gap-4'}`}>
+      <div className={cn('mx-auto w-full', isCenteredVariant ? 'max-w-md' : 'flex max-w-4xl items-center gap-3')}>
+        {/* Title */}
         <a
           href="/"
-          className="text-foreground hover:text-foreground/80 block shrink-0 font-sans text-lg font-bold tracking-widest uppercase"
+          className="text-foreground hover:text-foreground/80 shrink-0 font-sans text-lg font-bold tracking-widest uppercase"
           style={{ viewTransitionName: 'site-title' }}
         >
           Places
         </a>
 
-        <div className="relative flex-1" style={{ viewTransitionName: 'search-box' }}>
-          <div className={`flex gap-2 ${variant === 'centered' ? 'flex-col-reverse sm:flex-row' : ''}`}>
-            <InputGroup className="flex-1">
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupInput
-                type="search"
-                placeholder="Пачніце набіраць назву для пошуку"
-                autoComplete="off"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setIsOpen(true)}
-                onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-                onKeyDown={handleKeyDown}
-              />
-              {isFetching && (
-                <InputGroupAddon align="inline-end">
-                  <Loader2 className="animate-spin" />
-                </InputGroupAddon>
-              )}
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="shrink-0"
-                onClick={handleSearch}
-                disabled={query.trim().length < 2}
-                aria-label="Пошук"
-              >
-                <ArrowRight className="size-4" />
-              </Button>
-            </InputGroup>
-            {regions.length > 0 && (
-              <Select value={region} onValueChange={setRegion}>
-                <SelectTrigger className={variant === 'centered' ? 'w-full sm:w-auto' : 'w-auto shrink-0'}>
-                  <SelectValue placeholder="Вобласць" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Усе вобласці</SelectItem>
-                  {regions.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+        {isCenteredVariant ? (
+          <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row">
+            {searchInput}
+            {regionSelect}
           </div>
-
-          {showSuggestions && (
-            <div className="bg-popover absolute top-full right-0 left-0 z-50 mt-1 max-h-[60vh] overflow-y-auto rounded-lg border shadow-lg">
-              {results.length === 0 && !isFetching && (
-                <div className="text-muted-foreground px-4 py-8 text-center text-sm">Нічога не знойдзена</div>
-              )}
-              {results.map((result) => (
-                <a
-                  key={result.id}
-                  href={`/${result.id}`}
-                  className="hover:bg-accent block border-b px-4 py-3 last:border-b-0"
-                >
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                      {localityTypeLabels[result.type]}
-                    </Badge>
-                    <span className="text-lg leading-none font-medium">{result.name}</span>
-                  </div>
-                  <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-sm">
-                    {result.transliteration && <span>{result.transliteration}</span>}
-                    {result.russian && <span className="text-muted-foreground/70">{result.russian}</span>}
-                  </div>
-                  <div className="text-muted-foreground/60 mt-1 text-xs">{formatLocation(result)}</div>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
+        ) : (
+          <>
+            {searchInput}
+            {regionSelect}
+            {districtSelect}
+          </>
+        )}
       </div>
     </header>
   );
