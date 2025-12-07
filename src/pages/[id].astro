@@ -47,7 +47,7 @@ const name = mainForm?.form ?? place.name;
 ---
 
 <Layout title={`${name} — PLACES`}>
-  <div class="min-h-screen">
+  <div>
     <HeaderWrapper variant="top" regions={regions} client:load />
     <main transition:animate="slide">
       <PlaceDetails place={place} />

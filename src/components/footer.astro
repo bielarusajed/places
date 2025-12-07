@@ -1,0 +1,51 @@
+---
+import { cn } from '@/lib/utils';
+
+type Props = {
+  className?: string;
+};
+---
+
+<footer
+  class={cn(
+    'bg-background/95 supports-backdrop-filter:bg-background/60 border-t py-3 backdrop-blur',
+    Astro.props.className,
+  )}
+>
+  <div class="container mx-auto px-4 py-6">
+    <p class="text-sm text-gray-500">
+      &copy; {new Date().getFullYear()} PLACES. All rights reserved.<br />
+    </p>
+    <div class="mt-4 space-y-2 text-xs text-gray-500">
+      <strong>Крыніцы даных:</strong>
+      <ul>
+        <li>
+          <a
+            href="https://knihi.com/none/Nazvy_nasielenych_punktau_Respubliki_Bielarus_kamputarnaja_baza_zip.html"
+            class="underline hover:text-gray-400"
+            target="_blank"
+            rel="noopener noreferrer">«Назвы населеных пунктаў Рэспублікі Беларусь: кампутарная база»</a
+          >&nbsp;— <a
+            href="https://knihi.com/"
+            class="underline hover:text-gray-400"
+            target="_blank"
+            rel="noopener noreferrer">Беларуская Палічка</a
+          >. Змены: без змяненняў (no changes).
+        </li>
+        <li>
+          <a
+            href="https://github.com/Belarus/GrammarDB"
+            class="underline hover:text-gray-400"
+            target="_blank"
+            rel="noopener noreferrer">Граматычная база беларускай мовы</a
+          > &copy; Інстытут мовазнаўства НАНБ. Ужываецца на правах <a
+            href="https://creativecommons.org/licenses/by-sa/4.0/"
+            class="underline hover:text-gray-400"
+            target="_blank"
+            rel="noopener noreferrer">CC BY-SA 4.0</a
+          >. Змены: без змяненняў (no changes).
+        </li>
+      </ul>
+    </div>
+  </div>
+</footer>
