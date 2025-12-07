@@ -174,8 +174,10 @@ function ParadigmCarousel({ paradigmForms, mainFormText }: Props) {
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
+      <div className="mt-4 flex justify-center gap-2 sm:mt-0">
+        <CarouselPrevious className="static translate-y-0 sm:absolute sm:top-1/2 sm:-left-12 sm:-translate-y-1/2" />
+        <CarouselNext className="static translate-y-0 sm:absolute sm:top-1/2 sm:-right-12 sm:-translate-y-1/2" />
+      </div>
     </Carousel>
   );
 }

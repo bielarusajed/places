@@ -106,7 +106,10 @@ function Header({ variant = 'top', regions = [] }: Props) {
   const showSuggestions = !isSearchVariant && isOpen && query.length >= 2;
 
   const searchInput = (
-    <div className="relative flex-1" style={{ viewTransitionName: 'search-box' }}>
+    <div
+      className="relative order-last min-w-0 flex-1 basis-full sm:order-0 sm:basis-0"
+      style={{ viewTransitionName: 'search-box' }}
+    >
       <InputGroup>
         <InputGroupAddon>
           <Search />
@@ -172,9 +175,9 @@ function Header({ variant = 'top', regions = [] }: Props) {
   );
 
   const regionSelect = regions.length > 0 && (
-    <div style={{ viewTransitionName: 'region-select' }}>
+    <div className="w-full shrink-0 sm:w-auto" style={{ viewTransitionName: 'region-select' }}>
       <Select value={region} onValueChange={setRegion}>
-        <SelectTrigger className={cn('shrink-0', isCenteredVariant ? 'w-full sm:w-auto' : 'w-40')}>
+        <SelectTrigger className={cn(isCenteredVariant ? 'w-full sm:w-auto' : 'w-full sm:w-36')}>
           <SelectValue placeholder="Вобласць" />
         </SelectTrigger>
         <SelectContent>
@@ -190,19 +193,21 @@ function Header({ variant = 'top', regions = [] }: Props) {
   );
 
   const districtSelect = isSearchVariant && (
-    <Select value={storeDistrict} onValueChange={(v) => $searchDistrict.set(v)} disabled={!storeSelectedRegion}>
-      <SelectTrigger className="w-44 shrink-0">
-        <SelectValue placeholder="Раён" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">Усе раёны</SelectItem>
-        {districts.map((d) => (
-          <SelectItem key={d} value={d}>
-            {d}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="w-full shrink-0 sm:w-auto">
+      <Select value={storeDistrict} onValueChange={(v) => $searchDistrict.set(v)} disabled={!storeSelectedRegion}>
+        <SelectTrigger className="w-full sm:w-36">
+          <SelectValue placeholder="Раён" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Усе раёны</SelectItem>
+          {districts.map((d) => (
+            <SelectItem key={d} value={d}>
+              {d}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 
   return (
@@ -211,10 +216,15 @@ function Header({ variant = 'top', regions = [] }: Props) {
         'w-full px-4',
         isCenteredVariant
           ? 'flex min-h-[60vh] flex-col items-center justify-center'
-          : 'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 border-b py-3 backdrop-blur',
+          : 'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-40 border-b py-2 backdrop-blur sm:py-3',
       )}
     >
-      <div className={cn('mx-auto w-full', isCenteredVariant ? 'max-w-md' : 'flex max-w-4xl items-center gap-3')}>
+      <div
+        className={cn(
+          'mx-auto w-full',
+          isCenteredVariant ? 'max-w-md' : 'flex max-w-4xl flex-wrap items-center gap-2 sm:gap-3',
+        )}
+      >
         <a
           href="/"
           className="text-foreground hover:text-foreground/80 shrink-0 font-sans text-lg font-bold tracking-widest uppercase"
@@ -231,8 +241,10 @@ function Header({ variant = 'top', regions = [] }: Props) {
         ) : (
           <>
             {searchInput}
-            {regionSelect}
-            {districtSelect}
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
+              {regionSelect}
+              {districtSelect}
+            </div>
           </>
         )}
       </div>
