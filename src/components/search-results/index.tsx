@@ -78,10 +78,15 @@ function SearchResults() {
     return <div className="text-muted-foreground py-12 text-center">Увядзіце мінімум 2 сімвалы для пошуку</div>;
   }
 
+  // Show loading when query changed but debounce hasn't caught up yet
+  // This prevents showing stale results during View Transitions
+  const isQueryPending = query !== debouncedQuery && query.length >= 2;
+  const showLoading = isLoading || isQueryPending;
+
   return (
     <div className="space-y-4">
       {/* Results count */}
-      {!isLoading && (
+      {!showLoading && (
         <div className="text-muted-foreground text-sm">
           {allResults.length === 0 ? (
             'Нічога не знойдзена'
@@ -96,7 +101,7 @@ function SearchResults() {
 
       {/* Results list */}
       <div className="bg-card rounded-lg border">
-        {isLoading ? (
+        {showLoading ? (
           <>
             <ResultSkeleton />
             <ResultSkeleton />
@@ -130,14 +135,14 @@ function SearchResults() {
       </div>
 
       {/* Infinite scroll sentinel & loader */}
-      {allResults.length > 0 && (
+      {allResults.length > 0 && !showLoading && (
         <div ref={loadMoreRef} className="flex items-center justify-center py-4">
           {isFetchingNextPage && <Loader2 className="text-muted-foreground size-6 animate-spin" />}
         </div>
       )}
 
       {/* Fetching indicator (when filters change) */}
-      {isFetching && !isLoading && !isFetchingNextPage && (
+      {isFetching && !showLoading && !isFetchingNextPage && (
         <div className="fixed right-4 bottom-4">
           <div className="bg-background flex items-center gap-2 rounded-lg border px-3 py-2 shadow-lg">
             <Loader2 className="size-4 animate-spin" />

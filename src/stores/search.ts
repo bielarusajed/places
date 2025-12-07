@@ -20,15 +20,33 @@ $searchRegion.listen((region) => {
   prevRegion = region;
 });
 
-// Initialize from URL params (for SSR hydration) - only once
-export function initSearchFromUrl(url: URL) {
-  if ($isInitialized.get()) return;
+// Initialize from URL params
+export function initSearchFromUrl(url: URL, force = false) {
+  if (!force && $isInitialized.get()) return;
 
   const q = url.searchParams.get('q') || '';
   const region = url.searchParams.get('region') || '';
 
   $searchQuery.set(q);
   $searchRegion.set(region);
+  $searchDistrict.set('');
   prevRegion = region;
   $isInitialized.set(true);
+}
+
+// Global View Transitions handler - update store BEFORE components render
+// This runs before React hydration so components get fresh values
+if (typeof document !== 'undefined') {
+  document.addEventListener('astro:before-swap', () => {
+    // Reset initialization so next page can reinitialize from URL
+    $isInitialized.set(false);
+  });
+
+  document.addEventListener('astro:after-swap', () => {
+    // If navigating to search page, initialize from URL immediately
+    const url = new URL(window.location.href);
+    if (url.pathname === '/search') {
+      initSearchFromUrl(url, true);
+    }
+  });
 }

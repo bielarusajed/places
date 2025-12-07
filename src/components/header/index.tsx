@@ -42,10 +42,10 @@ function Header({ variant = 'top', regions = [] }: Props) {
   const [localRegion, setLocalRegion] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
 
-  // Initialize stores on mount for search variant
+  // Initialize stores on mount for search variant (View Transitions handled globally in store)
   useEffect(() => {
     if (isSearchVariant) {
-      initSearchFromUrl(new URL(window.location.href));
+      initSearchFromUrl(new URL(window.location.href), true);
     }
   }, [isSearchVariant]);
 
