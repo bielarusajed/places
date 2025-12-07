@@ -177,7 +177,7 @@ export const seed = async (options: Options) => {
               paradigmVariant: v['@_id'],
               paradigmTag: form['@_tag'],
               stressIndexes: Array.from(formStressIndexes),
-              form: form['#text'],
+              form: form['#text'].replaceAll('+', ''),
             };
           }),
         )
