@@ -35,6 +35,10 @@ type ParadigmVariant = {
   forms: PlaceForm[];
 };
 
+function formatFormsWithStress(forms: PlaceForm[]) {
+  return forms.map((f) => formatFormWithStress(f.form, f.stressIndexes)).join(', ');
+}
+
 function ParadigmTable({
   variant,
   variantIndex,
@@ -44,10 +48,12 @@ function ParadigmTable({
   variantIndex: number;
   totalVariants: number;
 }) {
-  const formsMap = new Map<string, PlaceForm>();
+  const formsMap = new Map<string, PlaceForm[]>();
   variant.forms.forEach((f) => {
     if (f.paradigmTag) {
-      formsMap.set(f.paradigmTag, f);
+      const existing = formsMap.get(f.paradigmTag) || [];
+      existing.push(f);
+      formsMap.set(f.paradigmTag, existing);
     }
   });
 
@@ -77,22 +83,14 @@ function ParadigmTable({
           </TableHeader>
           <TableBody>
             {casesWithData.map((caseKey) => {
-              const singularForm = formsMap.get(caseKey + 'S');
-              const pluralForm = formsMap.get(caseKey + 'P');
+              const singularForms = formsMap.get(caseKey + 'S');
+              const pluralForms = formsMap.get(caseKey + 'P');
 
               return (
                 <TableRow key={caseKey}>
                   <TableCell className="text-muted-foreground">{caseLabels[caseKey]}</TableCell>
-                  {hasSingular && (
-                    <TableCell>
-                      {singularForm ? formatFormWithStress(singularForm.form, singularForm.stressIndexes) : '—'}
-                    </TableCell>
-                  )}
-                  {hasPlural && (
-                    <TableCell>
-                      {pluralForm ? formatFormWithStress(pluralForm.form, pluralForm.stressIndexes) : '—'}
-                    </TableCell>
-                  )}
+                  {hasSingular && <TableCell>{singularForms ? formatFormsWithStress(singularForms) : '—'}</TableCell>}
+                  {hasPlural && <TableCell>{pluralForms ? formatFormsWithStress(pluralForms) : '—'}</TableCell>}
                 </TableRow>
               );
             })}
