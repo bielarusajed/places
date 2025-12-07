@@ -82,8 +82,9 @@ function Header({ variant = 'top', regions = [] }: Props) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isSearchVariant) {
+    if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       handleSearch();
     }
   };
@@ -120,10 +121,10 @@ function Header({ variant = 'top', regions = [] }: Props) {
           onBlur={!isSearchVariant ? () => setTimeout(() => setIsOpen(false), 200) : undefined}
           onKeyDown={!isSearchVariant ? handleKeyDown : undefined}
         />
-        {!isSearchVariant && isFetching && (
-          <InputGroupAddon align="inline-end">
-            <Loader2 className="animate-spin" />
-          </InputGroupAddon>
+        {!isSearchVariant && (
+          <div className="flex w-4 shrink-0 items-center justify-center">
+            {isFetching && <Loader2 className="text-muted-foreground size-4 animate-spin" />}
+          </div>
         )}
         {!isSearchVariant && (
           <Button
