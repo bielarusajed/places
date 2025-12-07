@@ -191,7 +191,7 @@ function Header({ variant = 'top', regions = [] }: Props) {
   const districtSelect = isSearchVariant && (
     <Select value={storeDistrict} onValueChange={(v) => $searchDistrict.set(v)} disabled={!storeSelectedRegion}>
       <SelectTrigger className="w-44 shrink-0">
-        <SelectValue placeholder={storeSelectedRegion ? 'Раён' : 'Спачатку вобласць'} />
+        <SelectValue placeholder="Раён" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Усе раёны</SelectItem>
@@ -214,7 +214,6 @@ function Header({ variant = 'top', regions = [] }: Props) {
       )}
     >
       <div className={cn('mx-auto w-full', isCenteredVariant ? 'max-w-md' : 'flex max-w-4xl items-center gap-3')}>
-        {/* Title */}
         <a
           href="/"
           className="text-foreground hover:text-foreground/80 shrink-0 font-sans text-lg font-bold tracking-widest uppercase"

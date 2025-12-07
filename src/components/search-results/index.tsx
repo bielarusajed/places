@@ -146,7 +146,7 @@ function SearchResults() {
         <div className="fixed right-4 bottom-4">
           <div className="bg-background flex items-center gap-2 rounded-lg border px-3 py-2 shadow-lg">
             <Loader2 className="size-4 animate-spin" />
-            <span className="text-sm">Абнаўленне...</span>
+            <span className="text-sm">Загрузка...</span>
           </div>
         </div>
       )}
