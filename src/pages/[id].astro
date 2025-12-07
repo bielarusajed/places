@@ -14,18 +14,14 @@ export const prerender = false;
 const { id } = Astro.params;
 const placeId = Number(id);
 
-if (isNaN(placeId)) {
-  return Astro.redirect('/');
-}
+if (isNaN(placeId)) return Astro.redirect('/');
 
 const [placeResult, regionsResult] = await Promise.all([
   db.select().from(places).where(eq(places.id, placeId)).limit(1),
   db.selectDistinct({ region: places.region }).from(places).orderBy(places.region),
 ]);
 
-if (placeResult.length === 0) {
-  return Astro.redirect('/');
-}
+if (placeResult.length === 0) return Astro.redirect('/');
 
 const regions = regionsResult.map((r) => r.region);
 
@@ -78,106 +74,78 @@ const locationParts = [
   `${place.region} вобласць`,
   place.district ? `${place.district} раён` : null,
   place.council ? `${place.council} сельсавет` : null,
-].filter(Boolean);
+].filter((v) => !!v);
 ---
 
 <Layout title={`${title} — PLACES`}>
-  <div>
-    <HeaderWrapper variant="top" regions={regions} client:load />
-    <main transition:animate="slide">
-      <div class="px-4 py-10">
-        <article class="mx-auto max-w-lg">
-          <!-- Header -->
-          <header class="mb-10 text-center">
-            <Badge variant="secondary" className="mb-4 text-xs tracking-wider uppercase">
-              {localityTypeLabels[place.type]}
-            </Badge>
-            <h1 class="mb-3 text-5xl font-bold tracking-tight">{place.name}</h1>
-            <p class="text-muted-foreground text-sm">{locationParts.join(' • ')}</p>
-          </header>
+  <HeaderWrapper variant="top" regions={regions} client:load />
+  <main class="mx-auto max-w-lg px-4 py-10" transition:animate="slide">
+    <header class="mb-10 text-center">
+      <Badge variant="secondary" className="mb-4">
+        {localityTypeLabels[place.type]}
+      </Badge>
+      <h1 class="mb-3 text-5xl font-bold tracking-tight">{place.name}</h1>
+      <p class="text-muted-foreground text-sm">{locationParts.join(' • ')}</p>
+    </header>
 
-          <Separator className="my-8" />
+    <Separator className="my-8" />
 
-          <!-- Content sections -->
-          <div class="space-y-8">
-            <!-- Translations -->
-            {
-              hasTranslations && (
-                <section>
-                  <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Назвы</h2>
-                  <div class="divide-border divide-y">
-                    {transliteration && (
-                      <div class="flex items-center justify-between gap-4 py-3">
-                        <span class="text-muted-foreground shrink-0">Лацінкай</span>
-                        <span class="text-right font-medium">{transliteration.form}</span>
-                      </div>
-                    )}
-                    {russian && (
-                      <div class="flex items-center justify-between gap-4 py-3">
-                        <span class="text-muted-foreground shrink-0">Па-руску</span>
-                        <span class="text-right font-medium">{russian.form}</span>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )
-            }
+    <div class="space-y-8">
+      {
+        hasTranslations && (
+          <section>
+            <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Назвы</h2>
+            {transliteration && (
+              <div class="flex items-center justify-between gap-4 border-b py-3">
+                <span class="text-muted-foreground">Лацінкай</span>
+                <span class="font-medium">{transliteration.form}</span>
+              </div>
+            )}
+            {russian && (
+              <div class="flex items-center justify-between gap-4 py-3">
+                <span class="text-muted-foreground">Па-руску</span>
+                <span class="font-medium">{russian.form}</span>
+              </div>
+            )}
+          </section>
+        )
+      }
 
-            <!-- Alternative names -->
-            {
-              hasAliases && (
-                <section>
-                  <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">
-                    Іншыя назвы
-                  </h2>
-                  <div class="flex flex-wrap gap-2">
-                    {aliasNames.map((alias) => {
-                      const isRussian = alias.type === 'alias-ru';
-                      return (
-                        <span
-                          class={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                            isRussian
-                              ? 'border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                              : 'bg-card hover:bg-accent shadow-sm'
-                          }`}
-                        >
-                          <span>{alias.form}</span>
-                          {alias.gender && (
-                            <span class="text-muted-foreground text-xs">({genderShort[alias.gender]})</span>
-                          )}
-                          {isRussian && <span class="text-[10px] opacity-50">рус.</span>}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </section>
-              )
-            }
+      {
+        hasAliases && (
+          <section>
+            <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Іншыя назвы</h2>
+            <div class="flex flex-wrap gap-2">
+              {aliasNames.map((alias) => (
+                <Badge variant={alias.type === 'alias-ru' ? 'outline' : 'secondary'}>
+                  {alias.form}
+                  {alias.gender && <span class="text-muted-foreground">({genderShort[alias.gender]})</span>}
+                  {alias.type === 'alias-ru' && <span class="opacity-50">рус.</span>}
+                </Badge>
+              ))}
+            </div>
+          </section>
+        )
+      }
 
-            <!-- Grammar -->
-            {
-              (hasGrammar || hasParadigms) && (
-                <section>
-                  <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Граматыка</h2>
-                  {hasGrammar && mainForm!.gender && (
-                    <div class="divide-border divide-y">
-                      <div class="flex items-center justify-between gap-4 py-3">
-                        <span class="text-muted-foreground shrink-0">Род</span>
-                        <span class="text-right font-medium">{genderLabels[mainForm!.gender]}</span>
-                      </div>
-                    </div>
-                  )}
-                  {hasParadigms && (
-                    <div class={`px-8 md:px-0 ${hasGrammar ? 'mt-6' : ''}`}>
-                      <ParadigmCarousel paradigmForms={paradigmForms} mainFormText={mainForm?.form ?? ''} client:load />
-                    </div>
-                  )}
-                </section>
-              )
-            }
-          </div>
-        </article>
-      </div>
-    </main>
-  </div>
+      {
+        (hasGrammar || hasParadigms) && (
+          <section>
+            <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Граматыка</h2>
+            {hasGrammar && mainForm.gender && (
+              <div class="flex items-center justify-between gap-4 py-3">
+                <span class="text-muted-foreground">Род</span>
+                <span class="font-medium">{genderLabels[mainForm.gender]}</span>
+              </div>
+            )}
+            {hasParadigms && (
+              <div class={hasGrammar ? 'mt-4' : ''}>
+                <ParadigmCarousel paradigmForms={paradigmForms} mainFormText={mainForm?.form ?? ''} client:load />
+              </div>
+            )}
+          </section>
+        )
+      }
+    </div>
+  </main>
 </Layout>

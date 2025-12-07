@@ -1,5 +1,6 @@
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { PlaceForm } from '@/lib/types';
 
 const caseLabels = {
@@ -57,47 +58,47 @@ function ParadigmTable({
   if (casesWithData.length === 0) return null;
 
   return (
-    <Card className="gap-0 overflow-hidden py-0">
+    <Card>
       {totalVariants > 1 && (
-        <div className="bg-muted/50 flex items-center justify-between border-b px-4 py-2">
-          <span className="text-muted-foreground text-xs font-medium">
+        <CardHeader className="">
+          <span className="text-muted-foreground text-xs">
             Варыянт {variantIndex + 1} з {totalVariants}
           </span>
-        </div>
+        </CardHeader>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted/30 border-b">
-              <th className="text-muted-foreground px-4 py-3 text-left font-medium">Склон</th>
-              {hasSingular && <th className="text-muted-foreground px-4 py-3 text-left font-medium">Адз. лік</th>}
-              {hasPlural && <th className="text-muted-foreground px-4 py-3 text-left font-medium">Мн. лік</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Склон</TableHead>
+              {hasSingular && <TableHead>Адз. лік</TableHead>}
+              {hasPlural && <TableHead>Мн. лік</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {casesWithData.map((caseKey) => {
               const singularForm = formsMap.get(caseKey + 'S');
               const pluralForm = formsMap.get(caseKey + 'P');
 
               return (
-                <tr key={caseKey} className="hover:bg-muted/20 transition-colors">
-                  <td className="text-muted-foreground px-4 py-3">{caseLabels[caseKey]}</td>
+                <TableRow key={caseKey}>
+                  <TableCell className="text-muted-foreground">{caseLabels[caseKey]}</TableCell>
                   {hasSingular && (
-                    <td className="px-4 py-3 font-medium">
+                    <TableCell>
                       {singularForm ? formatFormWithStress(singularForm.form, singularForm.stressIndexes) : '—'}
-                    </td>
+                    </TableCell>
                   )}
                   {hasPlural && (
-                    <td className="px-4 py-3 font-medium">
+                    <TableCell>
                       {pluralForm ? formatFormWithStress(pluralForm.form, pluralForm.stressIndexes) : '—'}
-                    </td>
+                    </TableCell>
                   )}
-                </tr>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </CardContent>
     </Card>
   );
 }
@@ -136,20 +137,24 @@ function ParadigmCarousel({ paradigmForms, mainFormText }: Props) {
   });
 
   if (paradigmVariants.length === 1) {
-    return <ParadigmTable variant={sortedVariants[0]} variantIndex={0} totalVariants={1} />;
+    return (
+      <div className="p-1">
+        <ParadigmTable variant={sortedVariants[0]} variantIndex={0} totalVariants={1} />
+      </div>
+    );
   }
 
   return (
     <Carousel className="w-full" opts={{ loop: true }}>
-      <CarouselContent>
+      <CarouselContent className="-ml-2 p-1 md:-ml-4">
         {sortedVariants.map((variant, idx) => (
-          <CarouselItem key={variant.id}>
+          <CarouselItem key={variant.id} className="pl-2 md:pl-4">
             <ParadigmTable variant={variant} variantIndex={idx} totalVariants={sortedVariants.length} />
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious className="-left-4 md:-left-12" />
-      <CarouselNext className="-right-4 md:-right-12" />
+      <CarouselPrevious />
+      <CarouselNext />
     </Carousel>
   );
 }
