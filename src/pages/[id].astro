@@ -79,11 +79,7 @@ const locationParts = [
 ].filter((v) => !!v);
 ---
 
-<Layout
-  title={`${title} — PLACES`}
-  ogImage={`${Astro.url.origin}/og/${id}.png`}
-  description={locationParts.join(' • ')}
->
+<Layout title={`${title} — PLACES`}>
   <HeaderWrapper variant="top" regions={regions} client:load />
   <main class="mx-auto max-w-lg px-4 py-10" transition:animate="slide">
     <header class="mb-10 text-center">
