@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 
 import { HeaderWrapper } from '@/components/header/wrapper';
 import ParadigmCarousel from '@/components/paradigm-carousel';
+import PlaceMap from '@/components/place-map.astro';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import db, { forms, places } from '@/db';
@@ -55,6 +56,7 @@ const hasTranslations = transliteration || russian;
 const hasAliases = aliasNames.length > 0;
 const hasGrammar = mainForm?.gender;
 const hasParadigms = paradigmForms.length > 0;
+const hasCoordinates = place.coordinates !== null;
 
 const genderLabels = {
   m: 'мужчынскі род',
@@ -143,6 +145,15 @@ const locationParts = [
                 <ParadigmCarousel paradigmForms={paradigmForms} mainFormText={mainForm?.form ?? ''} client:load />
               </div>
             )}
+          </section>
+        )
+      }
+
+      {
+        hasCoordinates && place.coordinates && (
+          <section>
+            <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">На мапе</h2>
+            <PlaceMap lat={place.coordinates.lat} lng={place.coordinates.lng} name={place.name} osmId={place.osmId} />
           </section>
         )
       }

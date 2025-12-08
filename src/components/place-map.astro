@@ -1,0 +1,133 @@
+---
+interface Props {
+  lat: number;
+  lng: number;
+  name: string;
+  osmId?: string | null;
+}
+
+const { lat, lng, name, osmId } = Astro.props;
+---
+
+<div class="place-map-container">
+  <div id="place-map" class="h-64 w-full rounded-lg" data-lat={lat} data-lng={lng} data-name={name}></div>
+  {
+    osmId && (
+      <a
+        href={`https://www.openstreetmap.org/node/${osmId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-muted-foreground hover:text-foreground mt-2 inline-flex items-center gap-1.5 text-xs transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+        Паглядзець на OpenStreetMap
+      </a>
+    )
+  }
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+<script>
+  import L from 'leaflet';
+
+  function initMap() {
+    const container = document.getElementById('place-map');
+    if (!container) return;
+
+    const lat = parseFloat(container.dataset.lat || '0');
+    const lng = parseFloat(container.dataset.lng || '0');
+    const name = container.dataset.name || '';
+
+    // Clear existing map if any (for view transitions)
+    const el = container as HTMLElement & { _leaflet_id?: number };
+    if (el._leaflet_id) {
+      el._leaflet_id = undefined;
+      container.innerHTML = '';
+    }
+
+    const map = L.map(container, {
+      scrollWheelZoom: false,
+    }).setView([lat, lng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    // Custom marker icon to match the site theme
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-pin"></div>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 24],
+      popupAnchor: [0, -24],
+    });
+
+    L.marker([lat, lng], { icon }).addTo(map).bindPopup(name);
+  }
+
+  // Initialize on page load
+  initMap();
+
+  // Re-initialize after view transitions
+  document.addEventListener('astro:after-swap', initMap);
+</script>
+
+<style is:global>
+  .custom-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .marker-pin {
+    width: 24px;
+    height: 24px;
+    border-radius: 50% 50% 50% 0;
+    background: var(--primary);
+    position: relative;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .marker-pin::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--background);
+    position: absolute;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Override Leaflet popup styles */
+  .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .leaflet-popup-content {
+    margin: 12px 16px;
+    font-family: inherit;
+    font-weight: 500;
+  }
+
+  .leaflet-popup-tip {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+</style>
