@@ -13,6 +13,23 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.places.id,
     }),
   },
+  // Auth
+  session: {
+    user: r.one.user({
+      from: r.session.userId,
+      to: r.user.id,
+    }),
+  },
+  account: {
+    user: r.one.user({
+      from: r.account.userId,
+      to: r.user.id,
+    }),
+  },
+  user: {
+    sessions: r.many.session(),
+    accounts: r.many.account(),
+  },
 }));
 
 const databaseUrl = import.meta.env.DATABASE_URL || process.env.DATABASE_URL;
