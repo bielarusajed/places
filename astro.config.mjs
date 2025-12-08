@@ -13,5 +13,11 @@ export default defineConfig({
   integrations: [react()],
 
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    includeFiles: ['./src/fonts/NotoSans-Regular.ttf', './src/fonts/NotoSans-Bold.ttf'],
+  }),
+
+  server: {
+    allowedHosts: ['a.bielarusajed.gay'],
+  },
 });

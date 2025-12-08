@@ -7,7 +7,12 @@ import '@/styles/global.css';
 type Props = {
   title?: string;
   description?: string;
+  ogImage?: string;
 };
+
+const { title = '', description = '', ogImage } = Astro.props;
+const siteUrl = Astro.site ?? Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl);
 ---
 
 <html lang="be">
@@ -15,8 +20,20 @@ type Props = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
-    <title>{Astro.props.title ?? ''}</title>
-    <meta name="description" content={Astro.props.description ?? ''} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+
     <ClientRouter />
   </head>
   <body class="flex min-h-screen flex-col font-[sans-serif]">
