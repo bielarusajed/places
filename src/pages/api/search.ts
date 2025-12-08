@@ -28,6 +28,9 @@ export const GET: APIRoute = async ({ url }) => {
 
   const queryLower = query.toLowerCase();
 
+  // Check if query is a numeric ID
+  const queryAsId = /^\d+$/.test(query) ? Number(query) : null;
+
   // Build cursor condition
   let cursorCondition = sql`TRUE`;
   if (cursor) {
@@ -36,12 +39,12 @@ export const GET: APIRoute = async ({ url }) => {
       const cursorPriority = Number(parts[0]);
       const cursorId = Number(parts[1]);
       if (!Number.isNaN(cursorPriority) && !Number.isNaN(cursorId)) {
-        cursorCondition = sql`(match_priority > ${cursorPriority} OR (match_priority = ${cursorPriority} AND place_id > ${cursorId}))`;
+        cursorCondition = sql`(match_priority > ${cursorPriority} OR (match_priority = ${cursorPriority} AND p.id > ${cursorId}))`;
       }
     } else {
       const cursorId = Number(cursor);
       if (!Number.isNaN(cursorId)) {
-        cursorCondition = sql`place_id > ${cursorId}`;
+        cursorCondition = sql`p.id > ${cursorId}`;
       }
     }
   }
@@ -50,15 +53,16 @@ export const GET: APIRoute = async ({ url }) => {
   const regionFilter = region ? sql`AND p.region = ${region}` : sql``;
   const districtFilter = district ? sql`AND p.district = ${district}` : sql``;
 
-  // Build word match conditions for combined location search
+  // Build word-by-word search condition: each word must match somewhere in search_text
   const queryWords = queryLower.split(/\s+/).filter(Boolean);
-  const wordConditions = queryWords.map((word) => sql`combined_loc LIKE ${'%' + word + '%'}`);
-  const allWordsMatch = sql.join(wordConditions, sql` AND `);
+  const wordConditions = queryWords.map((word) => sql`LOWER(p.search_text) LIKE ${'%' + word + '%'}`);
+  const allWordsMatch = wordConditions.length > 0 ? sql.join(wordConditions, sql` AND `) : sql`TRUE`;
 
-  // Single optimized query using CTEs for better performance
-  // 1. First CTE finds matching place IDs with their best match priority
-  // 2. Second CTE aggregates form data (transliteration, russian) per place
-  // 3. Final query joins everything together
+  // Build search condition: ID match OR all words match
+  const idCondition = queryAsId ? sql`p.id = ${queryAsId}` : sql`FALSE`;
+  const textCondition = allWordsMatch;
+
+  // Simplified query using denormalized search_text column
   const results = await db.execute<{
     place_id: number;
     name: string;
@@ -70,58 +74,27 @@ export const GET: APIRoute = async ({ url }) => {
     russian: string | null;
     match_priority: number;
   }>(sql`
-    WITH matching_places AS (
-      SELECT DISTINCT ON (p.id)
-        p.id as place_id,
-        CASE 
-          WHEN LOWER(f.form) = ${queryLower} THEN 0
-          WHEN LOWER(f.form) LIKE ${queryLower + '%'} THEN 1
-          WHEN f.form ILIKE ${'%' + query + '%'} THEN 2
-          ELSE 3
-        END as match_priority
-      FROM forms f
-      INNER JOIN places p ON f.place_id = p.id
-      WHERE (
-        f.form ILIKE ${'%' + query + '%'}
-        OR EXISTS (
-          SELECT 1 FROM (
-            SELECT LOWER(
-              COALESCE((SELECT form FROM forms WHERE place_id = p.id AND type = 'main' LIMIT 1), p.name)
-              || ' ' || COALESCE(p.district, '') 
-              || ' ' || p.region
-            ) as combined_loc
-          ) loc WHERE ${allWordsMatch}
-        )
-      )
-      ${regionFilter}
-      ${districtFilter}
-      ORDER BY p.id, match_priority
-    ),
-    form_data AS (
-      SELECT 
-        place_id,
-        MAX(CASE WHEN type = 'transliteration' THEN form END) as transliteration,
-        MAX(CASE WHEN type = 'russian' THEN form END) as russian
-      FROM forms
-      WHERE place_id IN (SELECT place_id FROM matching_places)
-        AND type IN ('transliteration', 'russian')
-      GROUP BY place_id
-    )
     SELECT 
-      mp.place_id,
+      p.id as place_id,
       p.name,
       p.type,
       p.region,
       p.district,
       p.council,
-      fd.transliteration,
-      fd.russian,
-      mp.match_priority
-    FROM matching_places mp
-    INNER JOIN places p ON mp.place_id = p.id
-    LEFT JOIN form_data fd ON mp.place_id = fd.place_id
-    WHERE ${cursorCondition}
-    ORDER BY mp.match_priority, mp.place_id
+      (SELECT form FROM forms WHERE place_id = p.id AND type = 'transliteration' LIMIT 1) as transliteration,
+      (SELECT form FROM forms WHERE place_id = p.id AND type = 'russian' LIMIT 1) as russian,
+      CASE 
+        WHEN p.id = ${queryAsId ?? -1} THEN 0
+        WHEN LOWER(p.name) = ${queryWords[0] ?? ''} THEN 1
+        WHEN LOWER(p.name) LIKE ${(queryWords[0] ?? '') + '%'} THEN 2
+        ELSE 3
+      END as match_priority
+    FROM places p
+    WHERE (${idCondition} OR ${textCondition})
+      ${regionFilter}
+      ${districtFilter}
+      AND ${cursorCondition}
+    ORDER BY match_priority, p.id
     LIMIT ${pageSize + 1}
   `);
 

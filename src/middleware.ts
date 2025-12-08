@@ -15,5 +15,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.session = null;
   }
 
+  const pathname = decodeURI(context.url.pathname);
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    if (!isAuthed) {
+      if (pathname.startsWith('/api/admin'))
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      return context.redirect('/login');
+    }
+  }
+
   return next();
 });

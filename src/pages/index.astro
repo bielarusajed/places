@@ -1,5 +1,5 @@
 ---
-import { HeaderWrapper } from '@/components/header/wrapper';
+import Header from '@/components/header';
 import db, { places } from '@/db';
 import Layout from '@/layouts/base.astro';
 
@@ -14,6 +14,6 @@ const regions = regionsResult.map((r) => r.region);
   description="Просты пошукавік населеных пунктаў Беларусі. База складаецца амаль з 24 000 населеных пунктаў, змяшчае націскі і ўжываныя альтэрнатыўныя назвы."
 >
   <main>
-    <HeaderWrapper variant="centered" regions={regions} client:load />
+    <Header variant="centered" regions={regions} client:load />
   </main>
 </Layout>

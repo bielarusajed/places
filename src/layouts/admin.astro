@@ -1,0 +1,18 @@
+---
+import Footer from '@/components/footer.astro';
+
+import AdminHeader from './_admin/header';
+import Layout from './meta.astro';
+
+type Props = {
+  title?: string;
+};
+---
+
+<Layout title={`${Astro.props.title} — PLACES ADMIN`}>
+  <div class="flex min-h-screen flex-col">
+    <AdminHeader client:load username={Astro.locals.user?.name ?? ''} email={Astro.locals.user?.email ?? ''} />
+    <slot />
+    <Footer class="mt-auto" />
+  </div>
+</Layout>

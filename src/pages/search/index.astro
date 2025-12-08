@@ -1,8 +1,9 @@
 ---
+import Header from '@/components/header';
 import db, { places } from '@/db';
 import Layout from '@/layouts/base.astro';
-import { SearchResultsWrapper } from '@/components/search-results/wrapper';
-import { HeaderWrapper } from '@/components/header/wrapper';
+
+import SearchResults from './_search-results';
 
 export const prerender = false;
 
@@ -15,9 +16,9 @@ const regions = regionsResult.map((r) => r.region);
 
 <Layout title={initialQuery ? `Пошук: ${initialQuery}` : 'Пошук'}>
   <div>
-    <HeaderWrapper variant="search" regions={regions} client:load />
+    <Header variant="search" regions={regions} client:load />
     <main class="container mx-auto px-4 py-6" transition:animate="slide">
-      <SearchResultsWrapper client:load />
+      <SearchResults client:load />
     </main>
   </div>
 </Layout>

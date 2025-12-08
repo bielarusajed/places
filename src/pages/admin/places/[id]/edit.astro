@@ -1,0 +1,41 @@
+---
+import db, { places } from '@/db';
+import Layout from '@/layouts/admin.astro';
+
+import PlaceEditor from '../_components/place-editor';
+
+export const prerender = false;
+
+const id = parseInt(Astro.params.id || '0', 10);
+if (isNaN(id) || id <= 0) return Astro.redirect('/admin');
+
+const place = await db.query.places.findFirst({
+  where: { id },
+  with: { forms: { where: { NOT: { type: 'paradigm' } } } },
+});
+
+if (!place) return Astro.redirect('/admin');
+
+// Get regions and types for selects
+const regions = (await db.selectDistinct({ region: places.region }).from(places).orderBy(places.region)).map(
+  (r) => r.region,
+);
+
+const types = (await db.selectDistinct({ type: places.type }).from(places).orderBy(places.type)).map((t) => t.type);
+
+// Extract coordinates if present
+const coordinates = place.coordinates ? { lat: place.coordinates.lat, lng: place.coordinates.lng } : null;
+const osmId = place.osmId ?? null;
+---
+
+<Layout title="Рэдагаваць населены пункт">
+  <PlaceEditor
+    client:load
+    mode="edit"
+    place={place}
+    coordinates={coordinates}
+    osmId={osmId}
+    regions={regions}
+    types={types}
+  />
+</Layout>

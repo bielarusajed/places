@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { navigate } from 'astro:transitions/client';
 import { ArrowRight, Loader2, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { getQueryClient } from '@/lib/query-client';
 import { localityTypeLabels, type SearchResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { $searchDistrict, $searchQuery, $searchRegion, $selectedRegion, initSearchFromUrl } from '@/stores/search';
@@ -253,4 +254,13 @@ function Header({ variant = 'top', regions = [] }: Props) {
   );
 }
 
-export default Header;
+function HeaderWrapper({ variant, regions = [] }: Props) {
+  const queryClient = getQueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Header variant={variant} regions={regions} />
+    </QueryClientProvider>
+  );
+}
+
+export default HeaderWrapper;

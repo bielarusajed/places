@@ -1,0 +1,24 @@
+---
+import db, { places } from '@/db';
+import Layout from '@/layouts/admin.astro';
+
+import Feedback from './_blocks/feedback.astro';
+import Metricks from './_blocks/metricks.astro';
+import Places from './_blocks/places';
+
+export const prerender = false;
+
+const regions = (await db.selectDistinct({ region: places.region }).from(places).orderBy(places.region)).map(
+  (r) => r.region,
+);
+
+const types = (await db.selectDistinct({ type: places.type }).from(places).orderBy(places.type)).map((t) => t.type);
+---
+
+<Layout title="Панэль кіравання">
+  <main class="container mx-auto flex-1 space-y-8 px-4 py-8">
+    <Metricks />
+    <Feedback />
+    <Places client:load regions={regions} types={types} />
+  </main>
+</Layout>

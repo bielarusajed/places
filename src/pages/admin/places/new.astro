@@ -1,0 +1,18 @@
+---
+import db, { places } from '@/db';
+import Layout from '@/layouts/admin.astro';
+
+import PlaceEditor from './_components/place-editor';
+
+export const prerender = false;
+
+const regions = (await db.selectDistinct({ region: places.region }).from(places).orderBy(places.region)).map(
+  (r) => r.region,
+);
+
+const types = (await db.selectDistinct({ type: places.type }).from(places).orderBy(places.type)).map((t) => t.type);
+---
+
+<Layout title="Дадаць населены пункт">
+  <PlaceEditor client:load mode="create" regions={regions} types={types} />
+</Layout>

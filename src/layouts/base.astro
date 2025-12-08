@@ -1,8 +1,9 @@
 ---
-import { ClientRouter } from 'astro:transitions';
+import '@/styles/global.css';
 
 import Footer from '@/components/footer.astro';
-import '@/styles/global.css';
+
+import Layout from './meta.astro';
 
 type Props = {
   title?: string;
@@ -10,19 +11,9 @@ type Props = {
 };
 ---
 
-<html lang="be">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <title>{Astro.props.title ?? ''}</title>
-    <meta name="description" content={Astro.props.description ?? ''} />
-    <ClientRouter />
-  </head>
-  <body class="flex min-h-screen flex-col font-[sans-serif]">
-    <div class="flex-1">
-      <slot />
-    </div>
-    <Footer />
-  </body>
-</html>
+<Layout {...Astro.props} class="flex min-h-screen flex-col font-[sans-serif]">
+  <div class="flex-1">
+    <slot />
+  </div>
+  <Footer />
+</Layout>

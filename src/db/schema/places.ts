@@ -32,9 +32,13 @@ export const places = pgTable(
 
     coordinates: geoPoint4326(),
     osmId: bigint({ mode: 'string' }),
+
+    // Denormalized search text containing all forms + location, maintained by trigger
+    searchText: text(),
   },
   (table) => [
     index('idx_settlements_name_trgm').using('gin', sql`${table.name} gin_trgm_ops`),
     index('idx_settlements_coords').using('gist', table.coordinates),
+    index('idx_places_search_text_trgm').using('gin', sql`${table.searchText} gin_trgm_ops`),
   ],
 );

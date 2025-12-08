@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { QueryClientProvider, useInfiniteQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
@@ -7,6 +7,7 @@ import { useInView } from 'react-intersection-observer';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { getQueryClient } from '@/lib/query-client';
 import { localityTypeLabels, type SearchResult } from '@/lib/types';
 import { $searchQuery, $selectedDistrict, $selectedRegion } from '@/stores/search';
 
@@ -154,4 +155,13 @@ function SearchResults() {
   );
 }
 
-export default SearchResults;
+function SearchResultsWrapper() {
+  const queryClient = getQueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SearchResults />
+    </QueryClientProvider>
+  );
+}
+
+export default SearchResultsWrapper;

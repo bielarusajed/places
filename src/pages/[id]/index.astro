@@ -1,15 +1,16 @@
 ---
 import { eq } from 'drizzle-orm';
 
-import { HeaderWrapper } from '@/components/header/wrapper';
-import ParadigmCarousel from '@/components/paradigm-carousel';
-import PlaceMap from '@/components/place-map.astro';
+import Header from '@/components/header';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import db, { forms, places } from '@/db';
 import Layout from '@/layouts/base.astro';
 import { localityTypeLabels, type PlaceForm } from '@/lib/types';
 import { formatFormWithStress } from '@/lib/utils';
+
+import ParadigmCarousel from './_paradigm-carousel';
+import PlaceMap from './_place-map.astro';
 
 export const prerender = false;
 
@@ -81,7 +82,7 @@ const locationParts = [
 ---
 
 <Layout title={`${title} — PLACES`}>
-  <HeaderWrapper variant="top" regions={regions} client:load />
+  <Header variant="top" regions={regions} client:load />
   <main class="mx-auto max-w-lg px-4 py-10" transition:animate="slide">
     <header class="mb-10 text-center">
       <Badge variant="secondary" className="mb-4">
