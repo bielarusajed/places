@@ -12,7 +12,7 @@ import { $searchQuery, $selectedDistrict, $selectedRegion } from '@/stores/searc
 
 type PaginatedResponse = {
   results: SearchResult[];
-  nextCursor: number | null;
+  nextCursor: string | null;
 };
 
 const formatLocation = (result: SearchResult) =>
@@ -53,14 +53,14 @@ function SearchResults() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: ['search-results', debouncedQuery, selectedRegion, selectedDistrict],
     queryFn: async ({ pageParam }) => {
-      const params = new URLSearchParams({ q: debouncedQuery });
+      const params = new URLSearchParams({ q: debouncedQuery, pageSize: '20' });
       if (selectedRegion) params.set('region', selectedRegion);
       if (selectedDistrict) params.set('district', selectedDistrict);
       if (pageParam) params.set('cursor', String(pageParam));
-      const res = await fetch(`/api/search-paginated?${params.toString()}`);
+      const res = await fetch(`/api/search?${params.toString()}`);
       return res.json() as Promise<PaginatedResponse>;
     },
-    initialPageParam: null as number | null,
+    initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: debouncedQuery.length >= 2,
   });

@@ -94,10 +94,11 @@ function Header({ variant = 'top', regions = [] }: Props) {
     queryKey: ['search', debouncedQuery, selectedRegion],
     queryFn: async () => {
       if (debouncedQuery.length < 2) return [];
-      const params = new URLSearchParams({ q: debouncedQuery });
+      const params = new URLSearchParams({ q: debouncedQuery, pageSize: '40' });
       if (selectedRegion) params.set('region', selectedRegion);
       const res = await fetch(`/api/search?${params.toString()}`);
-      return res.json() as Promise<SearchResult[]>;
+      const data = (await res.json()) as { results: SearchResult[]; nextCursor: string | null };
+      return data.results;
     },
     enabled: !isSearchVariant && debouncedQuery.length >= 2,
     placeholderData: keepPreviousData,

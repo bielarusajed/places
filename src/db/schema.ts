@@ -63,12 +63,11 @@ export const forms = pgTable(
     gender: genderEnum(),
     stressIndexes: integer().array().default([]),
 
-    // language: varchar({ length: 2 }).notNull(),
-
     form: text().notNull(),
   },
   (table) => [
     index('idx_forms_form_trgm').using('gin', sql`${table.form} gin_trgm_ops`),
     index('idx_forms_place_id').on(table.placeId),
+    index('idx_forms_place_type').on(table.placeId, table.type),
   ],
 );

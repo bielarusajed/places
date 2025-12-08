@@ -1,0 +1,1 @@
+CREATE INDEX "idx_forms_place_type" ON "forms" ("place_id","type");
