@@ -12,6 +12,25 @@ type Options = {
   inputXML: string;
 };
 
+const STRESS_CHAR = String.fromCharCode(769); // Combining acute accent U+0301
+
+export function extractStresses(text: string): { text: string; stressIndexes: number[] } {
+  const stressIndexes: number[] = [];
+  let cleanText = '';
+  let cleanIndex = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === STRESS_CHAR) {
+      if (cleanIndex > 0) stressIndexes.push(cleanIndex - 1);
+    } else {
+      cleanText += text[i];
+      cleanIndex++;
+    }
+  }
+
+  return { text: cleanText, stressIndexes };
+}
+
 const typeMap = {
   'аг.': 'agrotown',
   'в.': 'village',
@@ -129,9 +148,8 @@ export const seed = async (options: Options) => {
     const tsvParsedStream = tsvStream.pipe(parse({ delimiter: '\t', quote: null, headers: true }));
     tsvParsedStream.on('error', (error) => process.stderr.write(`Error parsing TSV: ${error.stack}\n`));
     tsvParsedStream.on('data', async (row: TSVRow) => {
-      const stressIndexes = new Set<number>();
-      for (let i = 0; i < row['Назва'].length; i++)
-        if (row['Назва'][i] === String.fromCharCode(769)) stressIndexes.add(i - 1);
+      const mainName = extractStresses(row['Назва']);
+      const stressIndexes = new Set(mainName.stressIndexes);
 
       const sameParadigms = grammarDB.Wordlist.Paradigm.filter(
         (p) => p['@_lemma'].split('+').join('') === row['Назва без націскаў'],
@@ -183,6 +201,20 @@ export const seed = async (options: Options) => {
         )
         .flat();
 
+      const transliteration = extractStresses(row['Транслітарацыя'].trim());
+      const russianName = extractStresses(row['Назва па-расейску'].trim());
+      const aliasRu = extractStresses(row['Назвы што ўжываюцца да цяперашняга часу(рас)'].trim());
+      const aliasVariants = row['Варыянты назвы'].split(';').map((variant) => {
+        const extracted = extractStresses(variant.split(',')[0].trim());
+        return {
+          placeId: place.id,
+          type: 'alias' as const,
+          gender: genderMap[variant.split(',')[1]?.trim() as keyof typeof genderMap] || genderMap[row['Род']],
+          form: extracted.text,
+          stressIndexes: extracted.stressIndexes,
+        };
+      });
+
       await db.insert(forms).values(
         [
           {
@@ -190,31 +222,29 @@ export const seed = async (options: Options) => {
             type: 'main' as const,
             gender: genderMap[row['Род']],
             form: row['Назва без націскаў'].trim(),
-            stressIndexes: Array.from(stressIndexes),
+            stressIndexes: mainName.stressIndexes,
           },
           {
             placeId: place.id,
             type: 'transliteration' as const,
             gender: genderMap[row['Род']],
-            form: row['Транслітарацыя'].trim(),
+            form: transliteration.text,
+            stressIndexes: transliteration.stressIndexes,
           },
           {
             placeId: place.id,
             type: 'russian' as const,
             gender: genderMap[row['Род']],
-            form: row['Назва па-расейску'].trim(),
+            form: russianName.text,
+            stressIndexes: russianName.stressIndexes,
           },
-          ...row['Варыянты назвы'].split(';').map((variant) => ({
-            placeId: place.id,
-            type: 'alias' as const,
-            gender: genderMap[variant.split(',')[1]?.trim() as keyof typeof genderMap] || genderMap[row['Род']],
-            form: variant.split(',')[0].trim().trim(),
-          })),
+          ...aliasVariants,
           {
             placeId: place.id,
             type: 'alias-ru' as const,
             gender: genderMap[row['Род']],
-            form: row['Назвы што ўжываюцца да цяперашняга часу(рас)'].trim(),
+            form: aliasRu.text,
+            stressIndexes: aliasRu.stressIndexes,
           },
           ...formsFromVariants,
         ].filter((v) => !!v.form),
