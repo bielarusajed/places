@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { PlaceForm } from '@/lib/types';
+import { formatFormWithStress } from '@/lib/utils';
 
 const caseLabels = {
   N: 'Назоўны',
@@ -22,21 +23,6 @@ function parseParadigmTag(tag: string): { case: string; number: string } | null 
   if (tag.length === 2) return { case: tag[0], number: tag[1] };
   if (tag.length === 3) return { case: tag[1], number: tag[2] };
   return null;
-}
-
-function formatFormWithStress(form: string, stressIndexes: number[] | null) {
-  if (!stressIndexes || stressIndexes.length === 0) {
-    return form;
-  }
-
-  let result = '';
-  for (let i = 0; i < form.length; i++) {
-    result += form[i];
-    if (stressIndexes.includes(i)) {
-      result += '\u0301'; // combining acute accent
-    }
-  }
-  return result;
 }
 
 type ParadigmVariant = {

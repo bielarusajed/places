@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import db, { forms, places } from '@/db';
 import Layout from '@/layouts/base.astro';
 import { localityTypeLabels, type PlaceForm } from '@/lib/types';
+import { formatFormWithStress } from '@/lib/utils';
 
 export const prerender = false;
 
@@ -50,7 +51,7 @@ const transliteration = placeForms.find((f) => f.type === 'transliteration');
 const russian = placeForms.find((f) => f.type === 'russian');
 const paradigmForms = placeForms.filter((f) => f.type === 'paradigm');
 
-const title = mainForm?.form ?? place.name;
+const title = mainForm ? formatFormWithStress(mainForm.form, mainForm.stressIndexes) : place.name;
 
 const hasTranslations = transliteration || russian;
 const hasAliases = aliasNames.length > 0;
@@ -86,7 +87,7 @@ const locationParts = [
       <Badge variant="secondary" className="mb-4">
         {localityTypeLabels[place.type]}
       </Badge>
-      <h1 class="mb-3 text-5xl font-bold tracking-tight">{place.name}</h1>
+      <h1 class="mb-3 text-5xl font-bold tracking-tight">{title}</h1>
       <p class="text-muted-foreground text-sm">{locationParts.join(' • ')}</p>
     </header>
 
@@ -100,13 +101,15 @@ const locationParts = [
             {transliteration && (
               <div class="flex items-center justify-between gap-4 border-b py-3">
                 <span class="text-muted-foreground">Лацінкай</span>
-                <span class="font-medium">{transliteration.form}</span>
+                <span class="font-medium">
+                  {formatFormWithStress(transliteration.form, transliteration.stressIndexes)}
+                </span>
               </div>
             )}
             {russian && (
               <div class="flex items-center justify-between gap-4 py-3">
                 <span class="text-muted-foreground">Па-руску</span>
-                <span class="font-medium">{russian.form}</span>
+                <span class="font-medium">{formatFormWithStress(russian.form, russian.stressIndexes)}</span>
               </div>
             )}
           </section>
@@ -120,7 +123,7 @@ const locationParts = [
             <div class="flex flex-wrap gap-2">
               {aliasNames.map((alias) => (
                 <Badge variant={alias.type === 'alias-ru' ? 'outline' : 'secondary'}>
-                  {alias.form}
+                  {formatFormWithStress(alias.form, alias.stressIndexes)}
                   {alias.gender && <span class="text-muted-foreground">({genderShort[alias.gender]})</span>}
                   {alias.type === 'alias-ru' && <span class="opacity-50">рус.</span>}
                 </Badge>
