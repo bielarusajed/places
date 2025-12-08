@@ -1,5 +1,6 @@
 import { command, run, string } from '@drizzle-team/brocli';
 
+import { createAdmin } from './create-admin';
 import { download } from './download';
 import { seed } from './seed';
 
@@ -22,4 +23,15 @@ const seedCommand = command({
   handler: seed,
 });
 
-run([downloadCommand, seedCommand]);
+const createAdminCommand = command({
+  name: 'create-admin',
+  aliases: ['ca'],
+  options: {
+    name: string().required(),
+    email: string().required(),
+    password: string(),
+  },
+  handler: createAdmin,
+});
+
+run([downloadCommand, seedCommand, createAdminCommand]);
