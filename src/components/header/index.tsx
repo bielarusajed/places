@@ -108,7 +108,7 @@ function Header({ variant = 'top', regions = [] }: Props) {
 
   const searchInput = (
     <div
-      className="relative order-last min-w-0 flex-1 basis-full sm:order-0 sm:basis-0"
+      className="relative z-10 order-last min-w-0 flex-1 basis-full sm:order-0 sm:basis-0"
       style={{ viewTransitionName: 'search-box' }}
     >
       <InputGroup>
