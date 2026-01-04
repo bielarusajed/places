@@ -1,7 +1,45 @@
 ---
-import { Activity } from 'lucide-react';
+import { count, gt } from 'drizzle-orm';
+import { Activity, Database, FileText, MapPin, ShieldCheck, Users } from 'lucide-react';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import db, { forms, places, session, user } from '@/db';
+
+interface ServiceMetrics {
+  connected: boolean;
+  latencyMs?: number;
+  metrics: Array<{ label: string; value: number | string; icon: typeof MapPin }>;
+}
+
+// PostgreSQL metrics
+const pgMetrics: ServiceMetrics = {
+  connected: false,
+  metrics: [],
+};
+
+try {
+  const start = performance.now();
+  const [placesResult, formsResult, usersResult, sessionsResult] = await Promise.all([
+    db.select({ count: count() }).from(places),
+    db.select({ count: count() }).from(forms),
+    db.select({ count: count() }).from(user),
+    db.select({ count: count() }).from(session).where(gt(session.expiresAt, new Date())),
+  ]);
+  pgMetrics.latencyMs = Math.round(performance.now() - start);
+  pgMetrics.connected = true;
+  pgMetrics.metrics = [
+    { label: 'Населеныя пункты', value: placesResult[0].count, icon: MapPin },
+    { label: 'Формы', value: formsResult[0].count, icon: FileText },
+    { label: 'Карыстальнікі', value: usersResult[0].count, icon: Users },
+    { label: 'Сесіі', value: sessionsResult[0].count, icon: ShieldCheck },
+  ];
+} catch (e) {
+  console.error('Failed to fetch PostgreSQL metrics:', e);
+  pgMetrics.connected = false;
+}
+
+// Placeholder for future Redis metrics
+// const redisMetrics: ServiceMetrics = { connected: false, metrics: [] };
 ---
 
 <Card>
@@ -11,6 +49,65 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
     </h2>
   </CardHeader>
   <CardContent>
-    <p class="text-muted-foreground">There'll be something here...</p>
+    <div class="grid gap-4 md:grid-cols-2">
+      <!-- PostgreSQL Service Panel -->
+      <div class="service-panel rounded-lg border bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 p-4">
+        <div class="mb-4 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <Database className="size-5 text-emerald-600" />
+            <span class="font-semibold">PostgreSQL</span>
+          </div>
+          <div class="flex items-center gap-2">
+            {
+              pgMetrics.latencyMs !== undefined && (
+                <span class="text-muted-foreground text-xs">{pgMetrics.latencyMs}ms</span>
+              )
+            }
+            <div
+              class:list={[
+                'flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium',
+                pgMetrics.connected ? 'bg-emerald-500/20 text-emerald-700' : 'bg-red-500/20 text-red-700',
+              ]}
+            >
+              <span
+                class:list={[
+                  'size-1.5 rounded-full',
+                  pgMetrics.connected ? 'animate-pulse bg-emerald-500' : 'bg-red-500',
+                ]}></span>
+              {pgMetrics.connected ? 'Connected' : 'Error'}
+            </div>
+          </div>
+        </div>
+
+        {
+          pgMetrics.connected ? (
+            <div class="grid grid-cols-2 gap-3">
+              {pgMetrics.metrics.map(({ label, value, icon: Icon }) => (
+                <div class="bg-background/60 rounded-md p-3 backdrop-blur-sm">
+                  <div class="text-muted-foreground flex items-center gap-1.5">
+                    <Icon className="size-3.5" />
+                    <span class="text-xs">{label}</span>
+                  </div>
+                  <div class="mt-1 text-2xl font-bold tracking-tight tabular-nums">
+                    {typeof value === 'number' ? value.toLocaleString('be-BY') : value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div class="flex items-center justify-center rounded-md bg-red-500/10 p-6 text-sm text-red-600">
+              Памылка злучэння з базай даных
+            </div>
+          )
+        }
+      </div>
+
+      <!-- Future: Redis Service Panel (placeholder slot) -->
+      <div class="service-panel bg-muted/30 flex items-center justify-center rounded-lg border border-dashed p-4">
+        <div class="text-muted-foreground text-center text-sm">
+          <div>There'll be something here...</div>
+        </div>
+      </div>
+    </div>
   </CardContent>
 </Card>
