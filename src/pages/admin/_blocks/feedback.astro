@@ -1,16 +1,109 @@
 ---
-import { MessageSquareDot } from 'lucide-react';
+import './feedback.css';
 
+import { desc, eq } from 'drizzle-orm';
+import { Check, ExternalLink, MessageSquareDot, X } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import db, { feedback, places } from '@/db';
+
+const pendingFeedback = await db
+  .select({
+    id: feedback.id,
+    message: feedback.message,
+    createdAt: feedback.createdAt,
+    place: {
+      id: places.id,
+      name: places.name,
+      region: places.region,
+    },
+  })
+  .from(feedback)
+  .innerJoin(places, eq(feedback.placeId, places.id))
+  .where(eq(feedback.status, 'pending'))
+  .orderBy(desc(feedback.createdAt))
+  .limit(10);
+
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat('be-BY', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 ---
 
 <Card>
-  <CardHeader>
+  <CardHeader className="flex flex-row items-center justify-between">
     <h2 class="flex items-center gap-2 text-2xl font-bold">
       <MessageSquareDot /> Зваротная сувязь
+      {
+        pendingFeedback.length > 0 && (
+          <Badge variant="secondary" className="ml-2">
+            {pendingFeedback.length}
+          </Badge>
+        )
+      }
     </h2>
+    <a href="/admin/feedback">
+      <Button variant="outline" size="sm">
+        Усе водгукі
+        <ExternalLink className="ml-1 size-3" />
+      </Button>
+    </a>
   </CardHeader>
   <CardContent>
-    <p class="text-muted-foreground">There'll be something here...</p>
+    {
+      pendingFeedback.length === 0 ? (
+        <div class="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed py-8 text-sm">
+          Няма новых водгукаў
+        </div>
+      ) : (
+        <div class="feedback-carousel flex gap-4 overflow-x-auto pb-2">
+          {pendingFeedback.map((item) => (
+            <div class="bg-muted/50 max-w-[300px] min-w-[300px] shrink-0 rounded-lg border p-4">
+              <div class="mb-2 flex items-start justify-between gap-2">
+                <a href={`/admin/places/${item.place.id}/edit`} class="text-sm font-semibold hover:underline">
+                  {item.place.name}
+                </a>
+                <Badge variant="outline" className="shrink-0 text-xs">
+                  {item.place.region}
+                </Badge>
+              </div>
+              <p class="mb-3 line-clamp-3 text-sm leading-relaxed">{item.message}</p>
+              <div class="flex items-center justify-between">
+                <span class="text-muted-foreground text-xs">{formatDate(item.createdAt)}</span>
+                <div class="flex gap-1">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7"
+                    title="Пазначыць як вырашанае"
+                    data-feedback-id={item.id}
+                    data-action="resolve"
+                  >
+                    <Check className="size-4 text-green-600" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7"
+                    title="Адхіліць"
+                    data-feedback-id={item.id}
+                    data-action="dismiss"
+                  >
+                    <X className="size-4 text-orange-600" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
   </CardContent>
 </Card>

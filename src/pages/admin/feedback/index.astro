@@ -1,0 +1,45 @@
+---
+import { desc, eq } from 'drizzle-orm';
+
+import db, { feedback, places } from '@/db';
+import Layout from '@/layouts/admin.astro';
+
+import FeedbackTable from './_feedback-table';
+
+export const prerender = false;
+
+const highlightId = Astro.url.searchParams.get('highlight');
+
+const feedbackList = await db
+  .select({
+    id: feedback.id,
+    message: feedback.message,
+    status: feedback.status,
+    createdAt: feedback.createdAt,
+    resolvedAt: feedback.resolvedAt,
+    place: {
+      id: places.id,
+      name: places.name,
+      region: places.region,
+      district: places.district,
+    },
+  })
+  .from(feedback)
+  .innerJoin(places, eq(feedback.placeId, places.id))
+  .orderBy(desc(feedback.createdAt));
+---
+
+<Layout title="Водгукі — Панэль кіравання">
+  <main class="container mx-auto flex-1 space-y-6 px-4 py-8">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight">Водгукі</h1>
+      <p class="text-muted-foreground mt-1">Кіраванне водгукамі ад карыстальнікаў</p>
+    </div>
+
+    <FeedbackTable
+      client:load
+      initialData={feedbackList}
+      highlightId={highlightId ? parseInt(highlightId, 10) : undefined}
+    />
+  </main>
+</Layout>

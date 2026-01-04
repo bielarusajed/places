@@ -9,6 +9,7 @@ import Layout from '@/layouts/base.astro';
 import { localityTypeLabels, type PlaceForm } from '@/lib/types';
 import { formatFormWithStress } from '@/lib/utils';
 
+import FeedbackForm from './_feedback-form';
 import ParadigmCarousel from './_paradigm-carousel';
 import PlaceMap from './_place-map.astro';
 
@@ -161,6 +162,10 @@ const locationParts = [
           </section>
         )
       }
+
+      <Separator className="my-8" />
+
+      <FeedbackForm placeId={placeId} placeName={place.name} client:load />
     </div>
   </main>
 </Layout>

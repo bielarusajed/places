@@ -6,10 +6,17 @@ import * as schema from './schema';
 export const relations = defineRelations(schema, (r) => ({
   places: {
     forms: r.many.forms(),
+    feedback: r.many.feedback(),
   },
   forms: {
     place: r.one.places({
       from: r.forms.placeId,
+      to: r.places.id,
+    }),
+  },
+  feedback: {
+    place: r.one.places({
+      from: r.feedback.placeId,
       to: r.places.id,
     }),
   },
