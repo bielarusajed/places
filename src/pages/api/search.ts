@@ -39,12 +39,12 @@ export const GET: APIRoute = async ({ url }) => {
       const cursorPriority = Number(parts[0]);
       const cursorId = Number(parts[1]);
       if (!Number.isNaN(cursorPriority) && !Number.isNaN(cursorId)) {
-        cursorCondition = sql`(match_priority > ${cursorPriority} OR (match_priority = ${cursorPriority} AND p.id > ${cursorId}))`;
+        cursorCondition = sql`(match_priority > ${cursorPriority} OR (match_priority = ${cursorPriority} AND place_id > ${cursorId}))`;
       }
     } else {
       const cursorId = Number(cursor);
       if (!Number.isNaN(cursorId)) {
-        cursorCondition = sql`p.id > ${cursorId}`;
+        cursorCondition = sql`place_id > ${cursorId}`;
       }
     }
   }
@@ -63,6 +63,7 @@ export const GET: APIRoute = async ({ url }) => {
   const textCondition = allWordsMatch;
 
   // Simplified query using denormalized search_text column
+  // Wrap in subquery to make match_priority available in WHERE clause for cursor pagination
   const results = await db.execute<{
     place_id: number;
     name: string;
@@ -74,30 +75,31 @@ export const GET: APIRoute = async ({ url }) => {
     russian: string | null;
     match_priority: number;
   }>(sql`
-    SELECT 
-      p.id as place_id,
-      p.name,
-      p.type,
-      p.region,
-      p.district,
-      p.council,
-      (SELECT form FROM forms WHERE place_id = p.id AND type = 'transliteration' LIMIT 1) as transliteration,
-      (SELECT form FROM forms WHERE place_id = p.id AND type = 'russian' LIMIT 1) as russian,
-      CASE 
-        WHEN p.id = ${queryAsId ?? -1} THEN 0
-        WHEN LOWER(p.name) = ${queryWords[0] ?? ''} THEN 1
-        WHEN LOWER(p.name) LIKE ${(queryWords[0] ?? '') + '%'} THEN 2
-        ELSE 3
-      END as match_priority
-    FROM places p
-    WHERE (${idCondition} OR ${textCondition})
-      ${regionFilter}
-      ${districtFilter}
-      AND ${cursorCondition}
-    ORDER BY match_priority, p.id
+    SELECT * FROM (
+      SELECT 
+        p.id as place_id,
+        p.name,
+        p.type,
+        p.region,
+        p.district,
+        p.council,
+        (SELECT form FROM forms WHERE place_id = p.id AND type = 'transliteration' LIMIT 1) as transliteration,
+        (SELECT form FROM forms WHERE place_id = p.id AND type = 'russian' LIMIT 1) as russian,
+        CASE 
+          WHEN p.id = ${queryAsId ?? -1} THEN 0
+          WHEN LOWER(p.name) = ${queryWords[0] ?? ''} THEN 1
+          WHEN LOWER(p.name) LIKE ${(queryWords[0] ?? '') + '%'} THEN 2
+          ELSE 3
+        END as match_priority
+      FROM places p
+      WHERE (${idCondition} OR ${textCondition})
+        ${regionFilter}
+        ${districtFilter}
+    ) AS ranked
+    WHERE ${cursorCondition}
+    ORDER BY match_priority, place_id
     LIMIT ${pageSize + 1}
   `);
-
   const hasMore = results.rows.length > pageSize;
   const items = hasMore ? results.rows.slice(0, pageSize) : results.rows;
   const lastItem = items[items.length - 1];
