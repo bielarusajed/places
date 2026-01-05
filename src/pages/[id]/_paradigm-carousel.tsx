@@ -143,6 +143,7 @@ function ParadigmCarousel({ paradigmForms, mainFormText }: Props) {
     return bMatches - aMatches;
   });
 
+  // Single variant: just show the table
   if (paradigmVariants.length === 1) {
     return (
       <div className="p-1">
@@ -151,20 +152,33 @@ function ParadigmCarousel({ paradigmForms, mainFormText }: Props) {
     );
   }
 
+  // Multiple variants: carousel on mobile, stacked column on desktop
   return (
-    <Carousel className="w-full" opts={{ loop: true }}>
-      <CarouselContent className="-ml-2 p-1 md:-ml-4">
+    <>
+      {/* Desktop: stacked column of all tables */}
+      <div className="hidden space-y-4 lg:block">
         {sortedVariants.map((variant, idx) => (
-          <CarouselItem key={variant.id} className="pl-2 md:pl-4">
-            <ParadigmTable variant={variant} variantIndex={idx} totalVariants={sortedVariants.length} />
-          </CarouselItem>
+          <ParadigmTable key={variant.id} variant={variant} variantIndex={idx} totalVariants={sortedVariants.length} />
         ))}
-      </CarouselContent>
-      <div className="mt-4 flex justify-center gap-2 sm:mt-0">
-        <CarouselPrevious className="static translate-y-0 sm:absolute sm:top-1/2 sm:-left-12 sm:-translate-y-1/2" />
-        <CarouselNext className="static translate-y-0 sm:absolute sm:top-1/2 sm:-right-12 sm:-translate-y-1/2" />
       </div>
-    </Carousel>
+
+      {/* Mobile: carousel */}
+      <div className="overflow-hidden lg:hidden">
+        <Carousel className="w-full" opts={{ loop: true }}>
+          <CarouselContent className="-ml-2 p-1">
+            {sortedVariants.map((variant, idx) => (
+              <CarouselItem key={variant.id} className="pl-2">
+                <ParadigmTable variant={variant} variantIndex={idx} totalVariants={sortedVariants.length} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <div className="mt-4 flex justify-center gap-2">
+            <CarouselPrevious className="static translate-y-0" />
+            <CarouselNext className="static translate-y-0" />
+          </div>
+        </Carousel>
+      </div>
+    </>
   );
 }
 

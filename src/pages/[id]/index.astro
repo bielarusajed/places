@@ -84,7 +84,8 @@ const locationParts = [
 
 <Layout title={`${title} — PLACES`}>
   <Header variant="top" regions={regions} client:load />
-  <main class="mx-auto max-w-lg px-4 py-10" transition:animate="slide">
+  <main class="mx-auto max-w-5xl overflow-x-hidden px-4 py-10" transition:animate="slide">
+    <!-- Hero Header -->
     <header class="mb-10 text-center">
       <Badge variant="secondary" className="mb-4">
         {localityTypeLabels[place.type]}
@@ -95,10 +96,14 @@ const locationParts = [
 
     <Separator className="my-8" />
 
-    <div class="space-y-8">
+    <!-- Main content grid: uses CSS order for different mobile/desktop layouts -->
+    <!-- Mobile order: names → aliases → grammar → map → feedback -->
+    <!-- Desktop: left column (names, aliases, map, feedback) | right column (grammar) -->
+    <div class="grid gap-8 overflow-hidden lg:grid-cols-2 lg:gap-12">
+      <!-- Names section: order-1 mobile, left column desktop -->
       {
         hasTranslations && (
-          <section>
+          <section class="order-1 min-w-0 lg:col-start-1">
             <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Назвы</h2>
             {transliteration && (
               <div class="flex items-center justify-between gap-4 border-b py-3">
@@ -118,9 +123,10 @@ const locationParts = [
         )
       }
 
+      <!-- Aliases section: order-2 mobile, left column desktop -->
       {
         hasAliases && (
-          <section>
+          <section class="order-2 min-w-0 lg:col-start-1">
             <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Іншыя назвы</h2>
             <div class="flex flex-wrap gap-2">
               {aliasNames.map((alias) => (
@@ -135,12 +141,13 @@ const locationParts = [
         )
       }
 
+      <!-- Grammar section: order-3 mobile, right column desktop (row-span-all) -->
       {
         (hasGrammar || hasParadigms) && (
-          <section>
+          <section class="order-3 min-w-0 lg:order-0 lg:col-start-2 lg:row-span-4 lg:row-start-1">
             <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">Граматыка</h2>
             {hasGrammar && mainForm.gender && (
-              <div class="flex items-center justify-between gap-4 py-3">
+              <div class="flex items-center justify-between gap-4 border-b py-3">
                 <span class="text-muted-foreground">Род</span>
                 <span class="font-medium">{genderLabels[mainForm.gender]}</span>
               </div>
@@ -154,18 +161,20 @@ const locationParts = [
         )
       }
 
+      <!-- Map section: order-4 mobile, left column desktop -->
       {
         hasCoordinates && place.coordinates && (
-          <section>
+          <section class="order-4 min-w-0 lg:col-start-1">
             <h2 class="text-muted-foreground mb-4 text-xs font-semibold tracking-widest uppercase">На мапе</h2>
             <PlaceMap lat={place.coordinates.lat} lng={place.coordinates.lng} name={place.name} osmId={place.osmId} />
           </section>
         )
       }
 
-      <Separator className="my-8" />
-
-      <FeedbackForm placeId={placeId} placeName={place.name} client:load />
+      <!-- Feedback section: order-5 mobile, left column desktop -->
+      <div class="order-5 min-w-0 lg:col-start-1">
+        <FeedbackForm placeId={placeId} placeName={place.name} client:load />
+      </div>
     </div>
   </main>
 </Layout>

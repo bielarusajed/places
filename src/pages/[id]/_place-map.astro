@@ -9,8 +9,8 @@ interface Props {
 const { lat, lng, name, osmId } = Astro.props;
 ---
 
-<div class="place-map-container">
-  <div id="place-map" class="h-64 w-full rounded-lg" data-lat={lat} data-lng={lng} data-name={name}></div>
+<div class="place-map-container overflow-hidden">
+  <div id="place-map" class="h-64 w-full rounded-lg lg:h-80" data-lat={lat} data-lng={lng} data-name={name}></div>
   {
     osmId && (
       <a
